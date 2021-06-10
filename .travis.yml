@@ -5,6 +5,7 @@ go:
 
 install:
  - go get github.com/mattn/goveralls
+ - go mod tidy
 
 script:
  - $HOME/gopath/bin/goveralls -service=travis-ci
