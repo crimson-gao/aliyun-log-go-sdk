@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	err := util.Client.CreateLogStore(util.ProjectName,util.LogStoreName,2,2,true,64)
+	err := util.Client.CreateLogStore(util.ProjectName,util.LogStoreName,65,2,true,64,60)
 	if err != nil {
 		panic(err)
 	}
@@ -21,10 +21,11 @@ func main() {
 
 	updateLogstore := &sls.LogStore{
 		Name:util.LogStoreName,
-		TTL:2,
+		TTL:70,
 		ShardCount:10,
 		AutoSplit:false,
 		WebTracking:true,
+        HotTTL: 61,
 	}
 	err = util.Client.UpdateLogStoreV2(util.ProjectName,updateLogstore)
 	if err != nil {

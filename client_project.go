@@ -38,9 +38,9 @@ func (c *Client) GetLogStore(project string, logstore string) (*LogStore, error)
 // and shardCnt is the number of shards,
 // and autoSplit is auto split,
 // and maxSplitShard is the max number of shard.
-func (c *Client) CreateLogStore(project string, logstore string, ttl, shardCnt int, autoSplit bool, maxSplitShard int) error {
+func (c *Client) CreateLogStore(project string, logstore string, ttl, shardCnt int, autoSplit bool, maxSplitShard int,hot_ttl int) error {
 	proj := convert(c, project)
-	return proj.CreateLogStore(logstore, ttl, shardCnt, autoSplit, maxSplitShard)
+	return proj.CreateLogStore(logstore, ttl, shardCnt, autoSplit, maxSplitShard,hot_ttl)
 }
 
 // CreateLogStoreV2 creates a new logstore in SLS

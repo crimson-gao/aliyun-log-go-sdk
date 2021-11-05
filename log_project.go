@@ -184,10 +184,11 @@ func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 // and shardCnt is the number of shards,
 // and autoSplit is auto split,
 // and maxSplitShard is the max number of shard.
-func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bool, maxSplitShard int) error {
+func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bool, maxSplitShard int,hot_ttl int) error {
 	type Body struct {
 		Name          string `json:"logstoreName"`
 		TTL           int    `json:"ttl"`
+        HotTTL        int    `json:"hot_ttl"`
 		ShardCount    int    `json:"shardCount"`
 		AutoSplit     bool   `json:"autoSplit"`
 		MaxSplitShard int    `json:"maxSplitShard"`
@@ -199,6 +200,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bo
 		ShardCount:    shardCnt,
 		AutoSplit:     autoSplit,
 		MaxSplitShard: maxSplitShard,
+        HotTTL: hot_ttl,
 	}
 	body, err := json.Marshal(store)
 	if err != nil {

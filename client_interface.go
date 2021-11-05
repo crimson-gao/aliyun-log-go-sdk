@@ -75,7 +75,7 @@ type ClientInterface interface {
 	// and shardCnt is the number of shards,
 	// and autoSplit is auto split,
 	// and maxSplitShard is the max number of shard.
-	CreateLogStore(project string, logstore string, ttl, shardCnt int, autoSplit bool, maxSplitShard int) error
+	CreateLogStore(project string, logstore string, ttl, shardCnt int, autoSplit bool, maxSplitShard int,hot_ttl int) error
 	// CreateLogStoreV2 creates a new logstore in SLS
 	CreateLogStoreV2(project string, logstore *LogStore) error
 	// DeleteLogStore deletes a logstore according by logstore name.

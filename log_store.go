@@ -22,6 +22,7 @@ import (
 type LogStore struct {
 	Name          string `json:"logstoreName"`
 	TTL           int    `json:"ttl"`
+	HotTTL           int    `json:"hot_ttl"`
 	ShardCount    int    `json:"shardCount"`
 	WebTracking   bool   `json:"enable_tracking"`
 	AutoSplit     bool   `json:"autoSplit"`
