@@ -53,7 +53,7 @@ func (s *SignerSuite) SetupTest() {
 		"A-bc":  "eFg",
 	}
 	s.dateTime = "20220808T032330Z"
-	// Set dateTime for debuging
+	// Set dateTime for debugging
 	s.headers["x-log-date"] = s.dateTime
 	s.v4, _ = GetSigner(s.mockAKID, s.mockAKSec, SignVersionV4, s.region)
 }

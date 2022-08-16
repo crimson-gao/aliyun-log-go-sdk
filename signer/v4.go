@@ -64,7 +64,7 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 
 	// Date & dateTime
 	date, dateTime := dateISO8601(), dateTimeISO8601()
-	if d, ok := headers["x-log-date"]; ok { // for debuging
+	if d, ok := headers["x-log-date"]; ok { // for debugging
 		dateTime = d
 		date = dateTime[:len("20060102")]
 	}
@@ -104,7 +104,7 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 	auth := buildAuthorization(s.accessKeyID, signedHeaderStr, signature, scope)
 	headers["Authorization"] = auth
 
-	// For debuging
+	// For debugging
 	// fmt.Println("sha256Payload: ", sha256Payload)
 	// fmt.Println("dateTime: ", dateTime)
 	// fmt.Println("canonReq: ", canonReq)

@@ -35,7 +35,7 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 
 	date = nowRFC1123()
 	if _, ok := headers["Date"]; ok {
-		date = headers["Date"] // for debuging
+		date = headers["Date"] // for debugging
 	}
 	headers["Date"] = date
 
