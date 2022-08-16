@@ -84,6 +84,8 @@ type Client struct {
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
+	Region          string
+	SignVersion     string
 	SecurityToken   string
 	UserAgent       string // default defaultLogUserAgent
 	RequestTimeOut  time.Duration
@@ -124,6 +126,16 @@ func (c *Client) SetUserAgent(userAgent string) {
 // SetHTTPClient set a custom http client, all request will send to sls by this client
 func (c *Client) SetHTTPClient(client *http.Client) {
 	c.HTTPClient = client
+}
+
+// SetSignVersion set signature version that the client used
+func (c *Client) SetSignVersion(version string) {
+	c.SignVersion = version
+}
+
+// SetRegion set a region, must be set if using signature version v4
+func (c *Client) SetRegion(region string) {
+	c.Region = region
 }
 
 // ResetAccessKeyToken reset client's access key token

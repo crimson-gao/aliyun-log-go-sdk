@@ -3,7 +3,6 @@ package sls
 // request sends a request to SLS.
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 
@@ -12,6 +11,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
+	"github.com/aliyun/aliyun-log-go-sdk/signer"
 	"github.com/go-kit/kit/log/level"
 )
 
@@ -42,7 +42,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		hostStr = project + "." + endpoint
 	}
 	headers["Host"] = hostStr
-	headers["Date"] = nowRFC1123()
+	// headers["Date"] = nowRFC1123() // do in signature
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
 
@@ -63,22 +63,19 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		headers["x-acs-security-token"] = stsToken
 	}
 
-	if body != nil {
-		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
-		headers["Content-MD5"] = bodyMD5
-		if _, ok := headers["Content-Type"]; !ok {
-			return nil, fmt.Errorf("Can't find 'Content-Type' header")
-		}
+	if _, ok := headers["Content-Type"]; !ok && body != nil {
+		return nil, fmt.Errorf("Can't find 'Content-Type' header")
 	}
 
-	// Calc Authorization
-	// Authorization = "SLS <AccessKeyId>:<Signature>"
-	digest, err := signature(accessKeySecret, method, uri, headers)
+	// Sign for request
+	signer, err := signer.GetSigner(accessKeyID, accessKeySecret, c.SignVersion, c.Region)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get signer: %w", err)
 	}
-	auth := fmt.Sprintf("SLS %v:%v", accessKeyID, digest)
-	headers["Authorization"] = auth
+	err = signer.Sign(method, uri, headers, body)
+	if err != nil {
+		return nil, fmt.Errorf("sign: %w", err)
+	}
 
 	// Initialize http request
 	reader := bytes.NewReader(body)
