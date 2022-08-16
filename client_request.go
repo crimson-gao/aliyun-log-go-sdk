@@ -64,7 +64,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	if _, ok := headers["Content-Type"]; !ok && body != nil {
-		return nil, fmt.Errorf("Can't find 'Content-Type' header")
+		return nil, fmt.Errorf("can't find 'Content-Type' header")
 	}
 
 	// Sign for request

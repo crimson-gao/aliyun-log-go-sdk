@@ -103,6 +103,7 @@ func convert(c *Client, projName string) *LogProject {
 
 func convertLocked(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
+	p = p.WithSignVersion(c.SignVersion, c.Region)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
 	if c.HTTPClient != nil {

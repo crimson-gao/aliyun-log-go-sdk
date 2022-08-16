@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/aliyun-log-go-sdk/signer"
 	"github.com/go-kit/kit/log/level"
 )
 
@@ -44,6 +45,7 @@ type LogProject struct {
 	SecurityToken   string
 	UsingHTTP       bool   // default https
 	UserAgent       string // default defaultLogUserAgent
+	SignVersion     string
 	baseURL         string
 	retryTimeout    time.Duration
 	httpClient      *http.Client
@@ -58,6 +60,7 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		AccessKeySecret: accessKeySecret,
 		httpClient:      defaultHttpClient,
 		retryTimeout:    defaultRetryTimeout,
+		SignVersion:     signer.DefaultSignVersion,
 	}
 	p.parseEndpoint()
 	return p, nil
@@ -85,6 +88,14 @@ func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 // each operation may send one or more HTTP requests in case of retry required.
 func (p *LogProject) WithRetryTimeout(timeout time.Duration) *LogProject {
 	p.retryTimeout = timeout
+	return p
+}
+
+// WithSignVersion specify the signature version used in authorization
+// A valid non-empty region is required if signVersion is v4.
+func (p *LogProject) WithSignVersion(signVersion, region string) *LogProject {
+	p.SignVersion = signVersion
+	p.Region = region
 	return p
 }
 
