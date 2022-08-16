@@ -52,6 +52,16 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 	if typ, ok := headers["Content-Type"]; ok && len(typ) == 0 {
 		headers["Content-Type"] = "application/json"
 	}
+
+	// Host should not contains schema here.
+	if host, ok := headers["Host"]; ok {
+		if strings.HasPrefix(host, "http://") {
+			headers["Host"] = host[len("http://"):]
+		} else if strings.HasPrefix(host, "https://") {
+			headers["Host"] = host[len("https://"):]
+		}
+	}
+
 	// Date & dateTime
 	date, dateTime := dateISO8601(), dateTimeISO8601()
 	if d, ok := headers["x-log-date"]; ok { // for debuging
