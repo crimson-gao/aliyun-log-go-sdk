@@ -11,8 +11,9 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/aliyun/aliyun-log-go-sdk/signer"
+	"github.com/aliyun/aliyun-log-go-sdk/sign"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 )
 
 // request sends a request to alibaba cloud Log Service.
@@ -68,13 +69,13 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	// Sign for request
-	signer, err := signer.GetSigner(accessKeyID, accessKeySecret, c.SignVersion, c.Region)
+	signer, err := sign.GetSigner(accessKeyID, accessKeySecret, c.SignVersion, c.Region)
 	if err != nil {
-		return nil, fmt.Errorf("get signer: %w", err)
+		return nil, errors.Wrap(err, "getSigner")
 	}
 	err = signer.Sign(method, uri, headers, body)
 	if err != nil {
-		return nil, fmt.Errorf("sign: %w", err)
+		return nil, errors.Wrap(err, "sign")
 	}
 
 	// Initialize http request

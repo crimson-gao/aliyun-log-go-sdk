@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-log-go-sdk/signer"
+	"github.com/aliyun/aliyun-log-go-sdk/sign"
 	"github.com/go-kit/kit/log/level"
 )
 
@@ -60,7 +60,7 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		AccessKeySecret: accessKeySecret,
 		httpClient:      defaultHttpClient,
 		retryTimeout:    defaultRetryTimeout,
-		SignVersion:     signer.DefaultSignVersion,
+		SignVersion:     sign.DefaultSignVersion,
 	}
 	p.parseEndpoint()
 	return p, nil

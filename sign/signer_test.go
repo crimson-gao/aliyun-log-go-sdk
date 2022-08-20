@@ -1,4 +1,4 @@
-package signer
+package sign
 
 import (
 	"crypto/md5"

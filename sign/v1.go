@@ -1,4 +1,4 @@
-package signer
+package sign
 
 import (
 	"crypto/hmac"
@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Sign version v1
@@ -64,7 +66,7 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 	// Calc CanonicalizedResource
 	u, err := url.Parse(uriWithQuery)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parseUri")
 	}
 
 	canoResource += u.EscapedPath()
@@ -100,16 +102,13 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 	mac := hmac.New(sha1.New, []byte(s.accessKeySecret))
 	_, err = mac.Write([]byte(signStr))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "hmac-sha1(signStr)")
 	}
 	digest = base64.StdEncoding.EncodeToString(mac.Sum(nil))
 	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)
 	headers["Authorization"] = auth
 	return nil
 }
-
-// GMT location
-var gmtLoc = time.FixedZone("GMT", 0)
 
 // NowRFC1123 returns now time in RFC1123 format with GMT timezone,
 // eg. "Mon, 02 Jan 2006 15:04:05 GMT".

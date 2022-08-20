@@ -1,11 +1,19 @@
-package signer
+package sign
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	SignVerionV1       = "v1"
 	SignVersionV4      = "v4"
 	DefaultSignVersion = SignVerionV1
+)
+
+var (
+	ErrSignerV4MissingRegion = errors.New("sign version v4 require a valid region")
+	ErrUnknownSignVersion    = errors.New("unknown sign version")
 )
 
 type Signer interface {
@@ -31,6 +39,9 @@ func GetSigner(accessKeyID, accessKeySecret, signVersion, region string) (Signer
 		return GetSigner(accessKeyID, accessKeySecret, DefaultSignVersion, region)
 
 	default:
-		return nil, errors.New("signVersion " + signVersion + " is invalid")
+		return nil, ErrUnknownSignVersion
 	}
 }
+
+// GMT location
+var gmtLoc = time.FixedZone("GMT", 0)

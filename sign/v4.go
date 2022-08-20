@@ -1,15 +1,16 @@
-package signer
+package sign
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -39,12 +40,12 @@ func NewSignerV4(accessKeyID, accessKeySecret, region string) *SignerV4 {
 
 func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
 	if s.region == "" {
-		return errors.New("SignType v4 require a valid region")
+		return ErrSignerV4MissingRegion
 	}
 
 	uri, urlParams, err := parseUri(uriWithQuery)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parseUri")
 	}
 
 	// If content-type value is empty string, server will ignore it.
@@ -93,11 +94,11 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 	msg := buildSignMessage(canonReq, dateTime, scope)
 	key, err := buildSignKey(s.accessKeySecret, s.region, date)
 	if err != nil {
-		return fmt.Errorf("buildSignKey: %w", err)
+		return errors.Wrap(err, "buildSignKey")
 	}
 	hash, err := hmacSha256([]byte(msg), key)
 	if err != nil {
-		return fmt.Errorf("hmac-sha256 signMessgae: %w", err)
+		return errors.Wrap(err, "hmac-sha256(signMessage)")
 	}
 	signature := fmt.Sprintf("%x", hash)
 	// Auth
@@ -118,7 +119,7 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 func parseUri(uriWithQuery string) (string, map[string]string, error) {
 	u, err := url.Parse(uriWithQuery)
 	if err != nil {
-		return "", nil, fmt.Errorf("uriWithQuery: %w", err)
+		return "", nil, errors.Wrap(err, "parse uriWithQuery")
 	}
 	urlParams := make(map[string]string)
 	for k, vals := range u.Query() {
@@ -230,7 +231,7 @@ func hmacSha256(message, key []byte) ([]byte, error) {
 	hmac := hmac.New(sha256.New, key)
 	_, err := hmac.Write(message)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "hmac-sha256")
 	}
 	return hmac.Sum(nil), nil
 }
@@ -238,19 +239,19 @@ func hmacSha256(message, key []byte) ([]byte, error) {
 func buildSignKey(accessKeySecret, region, date string) ([]byte, error) {
 	signDate, err := hmacSha256([]byte(date), []byte("aliyun_v4"+accessKeySecret))
 	if err != nil {
-		return nil, fmt.Errorf("sign date: %w", err)
+		return nil, errors.Wrap(err, "signDate")
 	}
 	signRegion, err := hmacSha256([]byte(region), signDate)
 	if err != nil {
-		return nil, fmt.Errorf("sign region: %w", err)
+		return nil, errors.Wrap(err, "signRegion")
 	}
 	signService, err := hmacSha256([]byte("sls"), signRegion)
 	if err != nil {
-		return nil, fmt.Errorf("sign product name: %w", err)
+		return nil, errors.Wrap(err, "signProductName")
 	}
 	signAll, err := hmacSha256([]byte("aliyun_v4_request"), signService)
 	if err != nil {
-		return nil, fmt.Errorf("sign terminator: %w", err)
+		return nil, errors.Wrap(err, "signTerminator")
 	}
 	return signAll, nil
 }

@@ -10,8 +10,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aliyun/aliyun-log-go-sdk/signer"
+	"github.com/aliyun/aliyun-log-go-sdk/sign"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 
 	"github.com/cenkalti/backoff"
 	"golang.org/x/net/context"
@@ -173,13 +174,13 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	// Sign for request
-	signer, err := signer.GetSigner(project.AccessKeyID, project.AccessKeySecret, project.SignVersion, project.Region)
+	signer, err := sign.GetSigner(project.AccessKeyID, project.AccessKeySecret, project.SignVersion, project.Region)
 	if err != nil {
-		return nil, fmt.Errorf("get signer: %w", err)
+		return nil, errors.Wrap(err, "getSigner")
 	}
 	err = signer.Sign(method, uri, headers, body)
 	if err != nil {
-		return nil, fmt.Errorf("sign: %w", err)
+		return nil, errors.Wrap(err, "sign")
 	}
 
 	// Initialize http request
