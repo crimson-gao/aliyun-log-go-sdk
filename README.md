@@ -31,10 +31,9 @@ go get -u github.com/aliyun/aliyun-log-go-sdk
    参考 [config.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/util/config.go) 文件
 
    ```go
-   AccessKeyID = "your ak id"
-   AccessKeySecret = "your ak secret"
+   credentialsProvider := YourCredentialsProvider{}
    Endpoint = "your endpoint" // just like cn-hangzhou.log.aliyuncs.com
-   Client = sls.CreateNormalInterface(Endpoint,AccessKeyID,AccessKeySecret,"")
+   Client = sls.CreateNormalInterfaceV2(Endpoint, credentialsProvider)
    ```
 
 2. **创建project**

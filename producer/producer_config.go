@@ -3,9 +3,13 @@ package producer
 import (
 	"net/http"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 )
 
 const Delimiter = "|"
+
+type UpdateStsTokenFunc = func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
 
 type ProducerConfig struct {
 	TotalSizeLnBytes      int64
@@ -27,13 +31,21 @@ type ProducerConfig struct {
 	LogMaxBackups         int
 	LogCompress           bool
 	Endpoint              string
-	AccessKeyID           string
-	AccessKeySecret       string
+	AccessKeyID           string // Deprecated: use CredentialsProvider instead
+	AccessKeySecret       string // Deprecated: use CredentialsProvider instead
 	NoRetryStatusCodeList []int
-	UpdateStsToken        func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
-	StsTokenShutDown      chan struct{}
-	HTTPClient            *http.Client
-	UserAgent             string
+	// Deprecated: use CredentialsProvider and UpdateFuncProviderAdapter instead.
+	//
+	// Example:
+	//   provider := sls.NewUpdateFuncProviderAdapter(updateStsTokenFunc)
+	//   config := &ProducerConfig{
+	//			CredentialsProvider: provider,
+	//   }
+	UpdateStsToken      UpdateStsTokenFunc
+	CredentialsProvider sls.CredentialsProvider
+	StsTokenShutDown    chan struct{}
+	HTTPClient          *http.Client
+	UserAgent           string
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
