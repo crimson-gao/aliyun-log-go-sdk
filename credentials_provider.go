@@ -2,7 +2,6 @@ package sls
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -85,8 +84,20 @@ func fetcherWithRetry(fetcher CredentialsFetcher, retryTimes int) CredentialsFet
 			errs = append(errs, err)
 		}
 		return nil, fmt.Errorf("exceed max retry times, errors: %w",
-			errors.Join(errs...))
+			joinErrors(errs...))
 	}
+}
+
+// Replace this with errors.Join when go version >= 1.20
+func joinErrors(errs ...error) error {
+	if errs == nil {
+		return nil
+	}
+	errStrs := make([]string, 0, len(errs))
+	for _, e := range errs {
+		errStrs = append(errStrs, e.Error())
+	}
+	return fmt.Errorf("[%s]", strings.Join(errStrs, ", "))
 }
 
 const UPDATE_FUNC_RETRY_TIMES = 3
