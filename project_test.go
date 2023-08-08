@@ -99,13 +99,15 @@ func (s *ProjectTestSuite) TestUpdateProject() {
 }
 
 func (s *ProjectTestSuite) TestCreateProjectV2() {
+
+	_, _ = s.client.GetProject(s.projectName)
 	v2 := s.projectName + "v2"
-	_, err := s.client.CreateProjectV2(v2, "test-project-v2", PROJECT_DATA_REDUNDANCY_TYPE_LRS)
+	_, err := s.client.CreateProjectV2(v2, "test-project-v2", PROJECT_DATA_REDUNDANCY_TYPE_ZRS)
 	s.NoError(err)
 	proj, err := s.client.GetProject(v2)
 	s.NoError(err)
 	fmt.Println(proj.Name)
-	s.Equal(proj.DataRedundancyType, PROJECT_DATA_REDUNDANCY_TYPE_LRS)
+	s.Equal(proj.DataRedundancyType, PROJECT_DATA_REDUNDANCY_TYPE_ZRS)
 	err = s.client.DeleteProject(v2)
 	s.NoError(err)
 }
