@@ -43,11 +43,12 @@ type ProducerConfig struct {
 	//			CredentialsProvider: provider,
 	//   }
 	UpdateStsToken      UpdateStsTokenFunc
-	StsTokenShutDown      chan struct{}
-	HTTPClient            *http.Client
-	UserAgent             string
-	LogTags               []*sls.LogTag
-	GeneratePackId        bool
+	StsTokenShutDown    chan struct{}
+	HTTPClient          *http.Client
+	UserAgent           string
+	LogTags             []*sls.LogTag
+	GeneratePackId      bool
+	CredentialsProvider sls.CredentialsProvider
 
 	packLock   sync.Mutex
 	packPrefix string
