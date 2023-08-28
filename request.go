@@ -189,6 +189,13 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	if err := signer.Sign(method, uri, headers, body); err != nil {
 		return nil, err
 	}
+
+	for k, v := range project.CommonHeaders {
+		if _, ok := headers[k]; !ok {
+			headers[k] = v
+		}
+	}
+
 	// Initialize http request
 	reader := bytes.NewReader(body)
 

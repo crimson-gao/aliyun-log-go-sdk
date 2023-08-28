@@ -89,6 +89,11 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		return nil, err
 	}
 
+	for k, v := range c.CommonHeaders {
+		if _, ok := headers[k]; !ok {
+			headers[k] = v
+		}
+	}
 	// Initialize http request
 	reader := bytes.NewReader(body)
 	var urlStr string

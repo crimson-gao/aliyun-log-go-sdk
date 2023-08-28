@@ -48,6 +48,12 @@ type LogProject struct {
 	retryTimeout       time.Duration
 	httpClient         *http.Client
 	credentialProvider CredentialsProvider
+
+	// User defined common headers.
+	//
+	// When conflict with sdk pre-defined headers, the value will
+	// be ignored
+	CommonHeaders      map[string]string
 }
 
 // NewLogProject creates a new SLS project.

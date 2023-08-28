@@ -106,8 +106,13 @@ type Client struct {
 	Region          string
 	AuthVersion     AuthVersionType //  v1 or v4 signature,default is v1
 
+
 	accessKeyLock       sync.RWMutex
 	credentialsProvider CredentialsProvider
+	// User defined common headers.
+	// When conflict with sdk pre-defined headers, the value will
+	// be ignored
+	CommonHeaders map[string]string
 }
 
 func convert(c *Client, projName string) *LogProject {
@@ -128,6 +133,7 @@ func convertLocked(c *Client, projName string) *LogProject {
 	p.UserAgent = c.UserAgent
 	p.AuthVersion = c.AuthVersion
 	p.Region = c.Region
+	p.CommonHeaders = c.CommonHeaders
 	if c.HTTPClient != nil {
 		p.httpClient = c.HTTPClient
 	}

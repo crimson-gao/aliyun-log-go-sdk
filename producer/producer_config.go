@@ -2,6 +2,7 @@ package producer
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -42,10 +43,15 @@ type ProducerConfig struct {
 	//			CredentialsProvider: provider,
 	//   }
 	UpdateStsToken      UpdateStsTokenFunc
-	CredentialsProvider sls.CredentialsProvider
-	StsTokenShutDown    chan struct{}
-	HTTPClient          *http.Client
-	UserAgent           string
+	StsTokenShutDown      chan struct{}
+	HTTPClient            *http.Client
+	UserAgent             string
+	LogTags               []*sls.LogTag
+	GeneratePackId        bool
+
+	packLock   sync.Mutex
+	packPrefix string
+	packNumber int64
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
