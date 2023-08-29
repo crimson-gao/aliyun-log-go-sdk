@@ -1,11 +1,14 @@
 package sls
 
 import (
+	"encoding/json"
 	"fmt"
+	io "io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
+
+	"go.uber.org/atomic"
 
 	"github.com/go-kit/kit/log/level"
 )
@@ -109,11 +112,11 @@ const UPDATE_FUNC_FETCH_ADVANCED_DURATION = time.Second * 60 * 10
 
 // Adapter for porting UpdateTokenFunc to a CredentialsProvider.
 type UpdateFuncProviderAdapter struct {
-	cred    *Credentials
+	cred atomic.Value // type *Credentials
+
 	fetcher CredentialsFetcher
 
-	mutex             sync.RWMutex
-	expirationInMills int64
+	expirationInMills atomic.Int64
 	advanceDuration   time.Duration // fetch before credentials expires in advance
 }
 
@@ -151,7 +154,8 @@ func updateFuncFetcher(updateFunc UpdateTokenFunction) CredentialsFetcher {
 // Retry at most maxRetryTimes if failed to fetch.
 func (adp *UpdateFuncProviderAdapter) GetCredentials() (Credentials, error) {
 	if !adp.shouldRefresh() {
-		return *adp.cred, nil
+		res := adp.cred.Load().(*Credentials)
+		return *res, nil
 	}
 	level.Debug(Logger).Log("reason", "updateTokenFunc start to fetch new credentials")
 
@@ -161,29 +165,107 @@ func (adp *UpdateFuncProviderAdapter) GetCredentials() (Credentials, error) {
 		return Credentials{}, fmt.Errorf("updateTokenFunc fail to fetch credentials, err:%w", err)
 	}
 
-	adp.mutex.Lock()
-	defer adp.mutex.Unlock()
-	adp.cred = &res.Credentials
-	adp.expirationInMills = res.expirationInMills
+	adp.cred.Store(&res.Credentials)
+	adp.expirationInMills.Store(res.expirationInMills)
 	level.Debug(Logger).Log("reason", "updateTokenFunc fetch new credentials succeed",
-		"expirationTime", time.UnixMilli(adp.expirationInMills).Format(CRED_TIME_FORMAT),
+		"expirationTime", time.UnixMilli(res.expirationInMills).Format(CRED_TIME_FORMAT),
 	)
-	return *adp.cred, nil
+	return res.Credentials, nil
 }
 
 // Returns true if no credentials ever fetched or credentials expired,
 // or credentials will be expired soon
 func (adp *UpdateFuncProviderAdapter) shouldRefresh() bool {
-	adp.mutex.RLock()
-	defer adp.mutex.RUnlock()
-
-	if adp.cred == nil {
+	v := adp.cred.Load()
+	if v == nil {
 		return true
 	}
 	now := time.Now()
-	return time.UnixMilli(adp.expirationInMills).Sub(now) <= adp.advanceDuration
+	return time.UnixMilli(adp.expirationInMills.Load()).Sub(now) <= adp.advanceDuration
 }
 
 func checkSTSTokenValid(accessKeyID, accessKeySecret, securityToken string, expirationTime time.Time) bool {
 	return accessKeyID != "" && accessKeySecret != "" && expirationTime.UnixMilli() > 0
+}
+
+const ECS_RAM_ROLE_URL_PREFIX = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
+const ECS_RAM_ROLE_RETRY_TIMES = 3
+
+func NewEcsRamRoleFetcher(urlPrefix, ramRole string, customClient *http.Client) CredentialsFetcher {
+	return NewCredentialsFetcher(newEcsRamRoleReqBuilder(urlPrefix, ramRole),
+		ecsRamRoleParser, customClient)
+}
+
+// Build http GET request with url(urlPrefix + ramRole)
+func newEcsRamRoleReqBuilder(urlPrefix, ramRole string) func() (*http.Request, error) {
+	return func() (*http.Request, error) {
+		url := urlPrefix + ramRole
+		return http.NewRequest(http.MethodGet, url, nil)
+	}
+}
+
+// Parse ECS Ram Role http response, convert it to TempCredentials
+func ecsRamRoleParser(resp *http.Response) (*TempCredentials, error) {
+	// 1. read body
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("fail to read http resp body: %w", err)
+	}
+	fetchResp := EcsRamRoleHttpResp{}
+	// 2. unmarshal
+	err = json.Unmarshal(data, &fetchResp)
+	if err != nil {
+		return nil, fmt.Errorf("fail to unmarshal json: %w, body: %s", err, string(data))
+	}
+	// 3. check json param
+	if !fetchResp.isValid() {
+		return nil, fmt.Errorf("invalid fetch result, body: %s", string(data))
+	}
+	return NewTempCredentials(
+		fetchResp.AccessKeyID,
+		fetchResp.AccessKeySecret,
+		fetchResp.SecurityToken, fetchResp.Expiration, fetchResp.LastUpdated), nil
+}
+
+// Response struct for http response of ecs ram role fetch request
+type EcsRamRoleHttpResp struct {
+	Code            string `json:"Code"`
+	AccessKeyID     string `json:"AccessKeyId"`
+	AccessKeySecret string `json:"AccessKeySecret"`
+	SecurityToken   string `json:"SecurityToken"`
+	Expiration      int64  `json:"Expiration"`
+	LastUpdated     int64  `json:"LastUpdated"`
+}
+
+func (r *EcsRamRoleHttpResp) isValid() bool {
+	return strings.ToLower(r.Code) == "success" && r.AccessKeyID != "" &&
+		r.AccessKeySecret != "" && r.Expiration > 0 && r.LastUpdated > 0
+}
+
+// If credentials expires or will be exipred soon, fetch a new credentials and return it.
+//
+// Otherwise returns the credentials fetched last time.
+//
+//	Retry at most maxRetryTimes if failed to fetch.
+func (p *EcsRamRoleCredentialsProvider) GetCredentials() (Credentials, error) {
+	if p.cred != nil && !p.cred.ShouldRefresh() {
+		return p.cred.Credentials, nil
+	}
+	level.Debug(Logger).Log("reason", "ecsRamRole start to fetch new credentials")
+
+	cred, err := p.fetcher()
+
+	if err != nil {
+		if !p.cred.HasExpired() { // if credentials still valid, return it
+			level.Warn(Logger).Log("ecsRamRole fetch credentials failed, credentials still valid, use it", err)
+			return cred.Credentials, nil
+		}
+		return Credentials{}, fmt.Errorf("ecsRamRole fetch credentials, err: %w", err)
+	}
+	p.cred = cred
+	level.Debug(Logger).Log("reason", "fetch new credentials succeed",
+		"expirationTime", time.UnixMilli(cred.expirationInMills).Format(CRED_TIME_FORMAT),
+		"updateTime", time.UnixMilli(cred.lastUpdatedInMills).Format(CRED_TIME_FORMAT),
+	)
+	return cred.Credentials, nil
 }

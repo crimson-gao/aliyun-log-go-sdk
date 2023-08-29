@@ -73,14 +73,14 @@ func TestUpdateFuncAdapter(t *testing.T) {
 	assert.Equal(t, cred.AccessKeyID, oldId)
 
 	// fetch new
-	adp.expirationInMills = nowInMills - hourInMills
+	adp.expirationInMills.Store(nowInMills - hourInMills)
 	cred, err2 = adp.GetCredentials()
 	assert.NoError(t, err2)
 	assert.Equal(t, 2, callCnt)
 	assert.Equal(t, cred.AccessKeyID, id)
 
 	// fetch failed test
-	adp.expirationInMills = nowInMills - hourInMills
+	adp.expirationInMills.Store(nowInMills - hourInMills)
 	err = errors.New("mock err")
 	cred, err2 = adp.GetCredentials()
 	assert.Error(t, err2)
@@ -89,7 +89,7 @@ func TestUpdateFuncAdapter(t *testing.T) {
 
 	// fetch in advance
 	adp.advanceDuration = time.Hour * 10
-	adp.expirationInMills = nowInMills + hourInMills
+	adp.expirationInMills.Store(nowInMills + hourInMills)
 	err = nil
 	cred, err2 = adp.GetCredentials()
 	assert.NoError(t, err2)

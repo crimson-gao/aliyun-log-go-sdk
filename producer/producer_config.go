@@ -33,7 +33,6 @@ type ProducerConfig struct {
 	LogCompress           bool
 	Endpoint              string
 	NoRetryStatusCodeList []int
-	StsTokenShutDown      chan struct{}
 	HTTPClient            *http.Client
 	UserAgent             string
 	LogTags               []*sls.LogTag
@@ -51,9 +50,10 @@ type ProducerConfig struct {
 	//   config := &ProducerConfig{
 	//			CredentialsProvider: provider,
 	//   }
-	UpdateStsToken  UpdateStsTokenFunc
-	AccessKeyID     string // Deprecated: use CredentialsProvider instead
-	AccessKeySecret string // Deprecated: use CredentialsProvider instead
+	UpdateStsToken   UpdateStsTokenFunc
+	StsTokenShutDown chan struct{}
+	AccessKeyID      string // Deprecated: use CredentialsProvider instead
+	AccessKeySecret  string // Deprecated: use CredentialsProvider instead
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
