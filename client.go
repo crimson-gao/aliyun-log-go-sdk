@@ -106,7 +106,6 @@ type Client struct {
 	Region          string
 	AuthVersion     AuthVersionType //  v1 or v4 signature,default is v1
 
-
 	accessKeyLock       sync.RWMutex
 	credentialsProvider CredentialsProvider
 	// User defined common headers.
@@ -183,7 +182,7 @@ func (c *Client) ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken
 	c.AccessKeyID = accessKeyID
 	c.AccessKeySecret = accessKeySecret
 	c.SecurityToken = securityToken
-	c.credentialsProvider = NewStaticCredProvider(accessKeyID, accessKeySecret, securityToken)
+	c.credentialsProvider = NewStaticCredentialsProvider(accessKeyID, accessKeySecret, securityToken)
 	c.accessKeyLock.Unlock()
 }
 

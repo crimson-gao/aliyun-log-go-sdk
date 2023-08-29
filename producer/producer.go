@@ -81,7 +81,7 @@ func createClient(producerConfig *ProducerConfig) (sls.ClientInterface, error) {
 		return sls.CreateTokenAutoUpdateClient(producerConfig.Endpoint, producerConfig.UpdateStsToken, producerConfig.StsTokenShutDown)
 	}
 	// fallback to default static long-lived AK
-	staticProvider := sls.NewStaticCredProvider(producerConfig.AccessKeyID, producerConfig.AccessKeySecret, "")
+	staticProvider := sls.NewStaticCredentialsProvider(producerConfig.AccessKeyID, producerConfig.AccessKeySecret, "")
 	return sls.CreateNormalInterfaceV2(producerConfig.Endpoint, staticProvider), nil
 }
 

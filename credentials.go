@@ -35,7 +35,13 @@ func NewTempCredentials(accessKeyId, accessKeySecret, securityToken string,
 	}
 }
 
-// @param factor must > 0.0 and <= 1.0
+// @param factor must > 0.0 and <= 1.0, the less the factor is,
+// the more frequently the credentials will be updated.
+//
+// If factor is set to 0, the credentials will be fetched every time
+// [GetCredentials] is called.
+//
+// If factor is set to 1, the credentials will be fetched only when expired .
 func (t *TempCredentials) WithExpiredFactor(factor float64) *TempCredentials {
 	if factor > 0.0 && factor <= 1.0 {
 		t.expiredFactor = factor

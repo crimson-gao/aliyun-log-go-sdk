@@ -20,7 +20,7 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 		AccessKeySecret: accessKeySecret,
 		SecurityToken:   securityToken,
 
-		credentialsProvider: NewStaticCredProvider(
+		credentialsProvider: NewStaticCredentialsProvider(
 			accessKeyID,
 			accessKeySecret,
 			securityToken,

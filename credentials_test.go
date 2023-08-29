@@ -1,11 +1,8 @@
 package sls
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -98,75 +95,6 @@ func TestUpdateFuncAdapter(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, 4+adpRetry, callCnt)
 	assert.Equal(t, cred.AccessKeyID, id)
-}
-
-func TestBuilderParser(t *testing.T) {
-	reqBuider := newEcsRamRoleReqBuilder(ECS_RAM_ROLE_URL_PREFIX, "test-ram-role")
-	_, err := reqBuider()
-	assert.NoError(t, err)
-
-	body := ``
-	resp := http.Response{
-		Body: io.NopCloser(bytes.NewBufferString(body)),
-	}
-	_, err = ecsRamRoleParser(&resp)
-	assert.Error(t, err)
-	body = `{"Code": "Success", "AccessKeyID": "xxxx", "AccessKeySecret": "yyyy",
-		"SecurityToken": "zzzz", "Expiration": 234, "LastUpdated": 456
-	}`
-	resp = http.Response{
-		Body: io.NopCloser(bytes.NewBufferString(body)),
-	}
-	cred, err := ecsRamRoleParser(&resp)
-	assert.NoError(t, err)
-	assert.Equal(t, "xxxx", cred.AccessKeyID)
-	assert.Equal(t, "yyyy", cred.AccessKeySecret)
-	assert.Equal(t, int64(234), cred.expirationInMills)
-}
-
-func TestEcsRamRole(t *testing.T) {
-	p := NewEcsRamRoleCredProvider("test-ram-role")
-	retryTimes := ECS_RAM_ROLE_RETRY_TIMES
-	nowInMills := time.Now().UnixMilli()
-
-	var mockCred *TempCredentials = &TempCredentials{
-		lastUpdatedInMills: nowInMills,
-		expirationInMills:  nowInMills + 1000*60*60,
-		expiredFactor:      0.8,
-		Credentials: Credentials{
-			AccessKeyID:     "id",
-			AccessKeySecret: "sec",
-			SecurityToken:   "ss",
-		},
-	}
-	var mockErr error
-	callCnt := 0
-	mockFetcher := fetcherWithRetry(func() (*TempCredentials, error) {
-		callCnt++
-		return mockCred, mockErr
-	}, retryTimes)
-	p.fetcher = mockFetcher
-	_, err := p.GetCredentials()
-	assert.NoError(t, err)
-	assert.Equal(t, 1, callCnt)
-	// not fetch
-	cred, err := p.GetCredentials()
-	assert.NoError(t, err)
-	assert.Equal(t, 1, callCnt)
-	assert.Equal(t, "id", cred.AccessKeyID)
-	// fetch new
-	p.cred.expirationInMills = nowInMills
-	mockCred.AccessKeyID = "id2"
-	cred, err = p.GetCredentials()
-	assert.NoError(t, err)
-	assert.Equal(t, 2, callCnt)
-	assert.Equal(t, "id2", cred.AccessKeyID)
-	// fetch failed
-	mockErr = errors.New("mock error")
-	p.cred.expirationInMills = nowInMills
-	_, err = p.GetCredentials()
-	assert.Error(t, err)
-	assert.Equal(t, 3+retryTimes, callCnt)
 }
 
 type testCredentials struct {

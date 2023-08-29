@@ -32,9 +32,18 @@ type ProducerConfig struct {
 	LogMaxBackups         int
 	LogCompress           bool
 	Endpoint              string
-	AccessKeyID           string // Deprecated: use CredentialsProvider instead
-	AccessKeySecret       string // Deprecated: use CredentialsProvider instead
 	NoRetryStatusCodeList []int
+	StsTokenShutDown      chan struct{}
+	HTTPClient            *http.Client
+	UserAgent             string
+	LogTags               []*sls.LogTag
+	GeneratePackId        bool
+	CredentialsProvider   sls.CredentialsProvider
+
+	packLock   sync.Mutex
+	packPrefix string
+	packNumber int64
+
 	// Deprecated: use CredentialsProvider and UpdateFuncProviderAdapter instead.
 	//
 	// Example:
@@ -42,17 +51,9 @@ type ProducerConfig struct {
 	//   config := &ProducerConfig{
 	//			CredentialsProvider: provider,
 	//   }
-	UpdateStsToken      UpdateStsTokenFunc
-	StsTokenShutDown    chan struct{}
-	HTTPClient          *http.Client
-	UserAgent           string
-	LogTags             []*sls.LogTag
-	GeneratePackId      bool
-	CredentialsProvider sls.CredentialsProvider
-
-	packLock   sync.Mutex
-	packPrefix string
-	packNumber int64
+	UpdateStsToken  UpdateStsTokenFunc
+	AccessKeyID     string // Deprecated: use CredentialsProvider instead
+	AccessKeySecret string // Deprecated: use CredentialsProvider instead
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
