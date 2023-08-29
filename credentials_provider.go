@@ -241,31 +241,3 @@ func (r *EcsRamRoleHttpResp) isValid() bool {
 	return strings.ToLower(r.Code) == "success" && r.AccessKeyID != "" &&
 		r.AccessKeySecret != "" && r.Expiration > 0 && r.LastUpdated > 0
 }
-
-// If credentials expires or will be exipred soon, fetch a new credentials and return it.
-//
-// Otherwise returns the credentials fetched last time.
-//
-//	Retry at most maxRetryTimes if failed to fetch.
-func (p *EcsRamRoleCredentialsProvider) GetCredentials() (Credentials, error) {
-	if p.cred != nil && !p.cred.ShouldRefresh() {
-		return p.cred.Credentials, nil
-	}
-	level.Debug(Logger).Log("reason", "ecsRamRole start to fetch new credentials")
-
-	cred, err := p.fetcher()
-
-	if err != nil {
-		if !p.cred.HasExpired() { // if credentials still valid, return it
-			level.Warn(Logger).Log("ecsRamRole fetch credentials failed, credentials still valid, use it", err)
-			return cred.Credentials, nil
-		}
-		return Credentials{}, fmt.Errorf("ecsRamRole fetch credentials, err: %w", err)
-	}
-	p.cred = cred
-	level.Debug(Logger).Log("reason", "fetch new credentials succeed",
-		"expirationTime", time.UnixMilli(cred.expirationInMills).Format(CRED_TIME_FORMAT),
-		"updateTime", time.UnixMilli(cred.lastUpdatedInMills).Format(CRED_TIME_FORMAT),
-	)
-	return cred.Credentials, nil
-}

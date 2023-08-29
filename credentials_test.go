@@ -1,8 +1,11 @@
 package sls
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	io "io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -95,6 +98,30 @@ func TestUpdateFuncAdapter(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, 4+adpRetry, callCnt)
 	assert.Equal(t, cred.AccessKeyID, id)
+}
+
+func TestBuilderParser(t *testing.T) {
+	reqBuider := newEcsRamRoleReqBuilder(ECS_RAM_ROLE_URL_PREFIX, "test-ram-role")
+	_, err := reqBuider()
+	assert.NoError(t, err)
+
+	body := ``
+	resp := http.Response{
+		Body: io.NopCloser(bytes.NewBufferString(body)),
+	}
+	_, err = ecsRamRoleParser(&resp)
+	assert.Error(t, err)
+	body = `{"Code": "Success", "AccessKeyID": "xxxx", "AccessKeySecret": "yyyy",
+		"SecurityToken": "zzzz", "Expiration": 234, "LastUpdated": 456
+	}`
+	resp = http.Response{
+		Body: io.NopCloser(bytes.NewBufferString(body)),
+	}
+	cred, err := ecsRamRoleParser(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, "xxxx", cred.AccessKeyID)
+	assert.Equal(t, "yyyy", cred.AccessKeySecret)
+	assert.Equal(t, int64(234), cred.expirationInMills)
 }
 
 type testCredentials struct {
