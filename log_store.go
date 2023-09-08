@@ -1103,9 +1103,7 @@ func (s *LogStore) GetMeteringMode() (*GetMeteringModeResponse, error) {
 }
 
 func (s *LogStore) UpdateMeteringMode(meteringMode string) error {
-	h := map[string]string{
-		"Content-Type": "application/json",
-	}
+
 	body := map[string]string{
 		"meteringMode": meteringMode,
 	}
@@ -1115,11 +1113,16 @@ func (s *LogStore) UpdateMeteringMode(meteringMode string) error {
 		return fmt.Errorf("cant marshal body:%w", err)
 	}
 
+	h := map[string]string{
+		"Content-Type":      "application/json",
+		"x-log-bodyrawsize": strconv.Itoa(len(requestBody)),
+	}
+
 	r, err := request(s.project, "PUT", uri, h, requestBody)
 
 	if err != nil {
-		data, _ := ioutil.ReadAll(r.Body)
-		return NewBadResponseError(string(data), r.Header, r.StatusCode)
+		r.Body.Close()
+		return err
 	}
 	return nil
 }
