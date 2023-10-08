@@ -39,6 +39,7 @@ const DefaultLogUserAgent = "golang-sdk-v0.1.0"
 type AuthVersionType string
 
 const (
+	AuthV0 AuthVersionType = "v0"
 	// AuthV1 v1
 	AuthV1 AuthVersionType = "v1"
 	// AuthV4 v4
@@ -113,7 +114,7 @@ type Client struct {
 	// be ignored
 	CommonHeaders map[string]string
 
-	KeyProvider string // for logtail
+	KeyProvider string
 }
 
 func convert(c *Client, projName string) *LogProject {

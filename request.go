@@ -190,6 +190,8 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	if project.AuthVersion == AuthV4 {
 		headers[HTTPHeaderLogDate] = dateTimeISO8601()
 		signer = NewSignerV4(accessKeyID, accessKeySecret, project.Region)
+	} else if project.AuthVersion == AuthV0 {
+		signer = NewSignerV0()
 	} else {
 		headers[HTTPHeaderDate] = nowRFC1123()
 		signer = NewSignerV1(accessKeyID, realAccessKey)

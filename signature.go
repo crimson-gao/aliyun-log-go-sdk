@@ -43,6 +43,17 @@ func nowRFC1123() string {
 	return time.Now().In(gmtLoc).Format(time.RFC1123)
 }
 
+func NewSignerV0() *SignerV0 {
+	return &SignerV0{}
+}
+
+type SignerV0 struct{}
+
+func (s *SignerV0) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+	// do nothing
+	return nil
+}
+
 // SignerV1 version v1
 type SignerV1 struct {
 	accessKeyID     string
