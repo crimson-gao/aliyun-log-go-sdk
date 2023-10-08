@@ -77,6 +77,10 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 			return nil, fmt.Errorf("Can't find 'Content-Type' header")
 		}
 	}
+	if c.KeyProvider != "" && c.AuthVersion != AuthV4 {
+		headers["x-log-keyprovider"] = c.KeyProvider
+	}
+
 	var signer Signer
 	if authVersion == AuthV4 {
 		headers[HTTPHeaderLogDate] = dateTimeISO8601()
@@ -89,11 +93,8 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		return nil, err
 	}
 
-	for k, v := range c.CommonHeaders {
-		if _, ok := headers[k]; !ok {
-			headers[k] = v
-		}
-	}
+	addHeadersAfterSign(c.CommonHeaders, headers)
+
 	// Initialize http request
 	reader := bytes.NewReader(body)
 	var urlStr string

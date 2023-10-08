@@ -138,3 +138,13 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 	headers[HTTPHeaderAuthorization] = auth
 	return nil
 }
+
+// add commonHeaders to headers after signature if not conflict
+func addHeadersAfterSign(commonHeaders, headers map[string]string) {
+	for k, v := range commonHeaders {
+		lowerKey := strings.ToLower(k)
+		if _, ok := headers[lowerKey]; !ok {
+			headers[k] = v
+		}
+	}
+}

@@ -2,6 +2,7 @@ package sls
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -70,10 +71,10 @@ func (s *ClientTestSuite) TestClientCommonHeader() {
 	lg := &LogGroup{
 		Source: &source,
 		Logs: []*Log{
-			&Log{
+			{
 				Time: &n,
 				Contents: []*LogContent{
-					&LogContent{
+					{
 						Key:   &key,
 						Value: &value,
 					},
@@ -87,6 +88,19 @@ func (s *ClientTestSuite) TestClientCommonHeader() {
 	stores, err := s.client.ListSubStore(s.env.ProjectName, s.env.LogstoreName)
 	s.Require().NoError(err)
 	fmt.Println(len(stores))
+	// test x-log
+	s.client.CommonHeaders = map[string]string{
+		"HTTPHeaderHost":           "wrong host",
+		"X-LOG-INTERNAL-CLIENT-IP": "5.5.5.1",
+	}
+
+	// test v4
+	s.client.SetAuthVersion(AuthV4)
+	s.client.SetRegion(os.Getenv("LOG_TEST_REGION"))
+	s.client.KeyProvider = ""
+	err = s.client.PostLogStoreLogs(s.env.ProjectName, s.env.LogstoreName, lg, nil)
+	s.Require().NoError(err)
+
 }
 
 func (s *ClientTestSuite) TestMeteringMode() {
