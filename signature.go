@@ -162,20 +162,7 @@ func addHeadersAfterSign(commonHeaders, headers map[string]string) {
 
 const MD5_SHA1_SALT = "md5-sha1-salt"
 
-func calcMd5Sha1(accessKeyId, accessKeySecret string) (string, error) {
-	mac := hmac.New(sha1.New, []byte(accessKeyId))
-	_, err := mac.Write([]byte(accessKeySecret))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%X", md5.Sum(mac.Sum(nil))), nil
-}
-
 func calcRealAccessKey(accessKeyId, accessKeySecret, keyProvider string) (string, error) {
-	if keyProvider == MD5_SHA1_SALT {
-		return calcMd5Sha1(accessKeyId, accessKeySecret)
-	}
-
 	if keyProvider == "" {
 		return accessKeySecret, nil
 	}
