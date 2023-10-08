@@ -79,7 +79,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	// for logtail
-	if c.KeyProvider != "" {
+	if c.KeyProvider != "" && c.AuthVersion != AuthV4 {
 		headers["x-log-keyprovider"] = c.KeyProvider
 	}
 	realAccessKey, err := calcRealAccessKey(accessKeyID, accessKeySecret, c.KeyProvider)
@@ -90,7 +90,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	var signer Signer
 	if authVersion == AuthV4 {
 		headers[HTTPHeaderLogDate] = dateTimeISO8601()
-		signer = NewSignerV4(accessKeyID, realAccessKey, region)
+		signer = NewSignerV4(accessKeyID, accessKeySecret, region)
 	} else {
 		headers[HTTPHeaderDate] = nowRFC1123()
 		signer = NewSignerV1(accessKeyID, realAccessKey)

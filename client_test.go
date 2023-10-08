@@ -2,6 +2,7 @@ package sls
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -99,6 +100,19 @@ func (s *ClientTestSuite) TestClientCommonHeader() {
 		"HTTPHeaderHost":           "wrong host",
 		"X-LOG-INTERNAL-CLIENT-IP": "5.5.5.1",
 	}
+	err = s.client.PostLogStoreLogs(s.env.ProjectName, s.env.LogstoreName, lg, nil)
+	s.Require().NoError(err)
+
+	// test v4
+	s.client.SetAuthVersion(AuthV4)
+	s.client.SetRegion(os.Getenv("LOG_TEST_REGION"))
+	s.client.KeyProvider = ""
+	err = s.client.PostLogStoreLogs(s.env.ProjectName, s.env.LogstoreName, lg, nil)
+	s.Require().NoError(err)
+
+	s.client.SetAuthVersion(AuthV4)
+	s.client.SetRegion(os.Getenv("LOG_TEST_REGION"))
+	s.client.KeyProvider = MD5_SHA1_SALT
 	err = s.client.PostLogStoreLogs(s.env.ProjectName, s.env.LogstoreName, lg, nil)
 	s.Require().NoError(err)
 }

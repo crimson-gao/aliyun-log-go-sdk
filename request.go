@@ -178,7 +178,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		}
 	}
 
-	if project.KeyProvider != "" {
+	if project.KeyProvider != "" && project.AuthVersion != AuthV4 {
 		headers["x-log-keyprovider"] = project.KeyProvider
 	}
 	realAccessKey, err := calcRealAccessKey(accessKeyID, accessKeySecret, project.KeyProvider)
@@ -189,7 +189,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	var signer Signer
 	if project.AuthVersion == AuthV4 {
 		headers[HTTPHeaderLogDate] = dateTimeISO8601()
-		signer = NewSignerV4(accessKeyID, realAccessKey, project.Region)
+		signer = NewSignerV4(accessKeyID, accessKeySecret, project.Region)
 	} else {
 		headers[HTTPHeaderDate] = nowRFC1123()
 		signer = NewSignerV1(accessKeyID, realAccessKey)
