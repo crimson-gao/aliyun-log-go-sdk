@@ -161,10 +161,3 @@ func addHeadersAfterSign(commonHeaders, headers map[string]string) {
 }
 
 const MD5_SHA1_SALT = "md5-sha1-salt"
-
-func calcRealAccessKey(accessKeyId, accessKeySecret, keyProvider string) (string, error) {
-	if keyProvider == "" {
-		return accessKeySecret, nil
-	}
-	return "", fmt.Errorf("invalid keyProvider: %s", keyProvider)
-}
