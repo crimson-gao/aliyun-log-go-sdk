@@ -43,6 +43,17 @@ func nowRFC1123() string {
 	return time.Now().In(gmtLoc).Format(time.RFC1123)
 }
 
+func NewSignerV0() *SignerV0 {
+	return &SignerV0{}
+}
+
+type SignerV0 struct{}
+
+func (s *SignerV0) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+	// do nothing
+	return nil
+}
+
 // SignerV1 version v1
 type SignerV1 struct {
 	accessKeyID     string
@@ -137,4 +148,23 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 	auth := fmt.Sprintf("SLS %s:%s", s.accessKeyID, digest)
 	headers[HTTPHeaderAuthorization] = auth
 	return nil
+}
+
+// add commonHeaders to headers after signature if not conflict
+func addHeadersAfterSign(commonHeaders, headers map[string]string) {
+	for k, v := range commonHeaders {
+		lowerKey := strings.ToLower(k)
+		if _, ok := headers[lowerKey]; !ok {
+			headers[k] = v
+		}
+	}
+}
+
+const MD5_SHA1_SALT = "md5-sha1-salt"
+
+func calcRealAccessKey(accessKeyId, accessKeySecret, keyProvider string) (string, error) {
+	if keyProvider == "" {
+		return accessKeySecret, nil
+	}
+	return "", fmt.Errorf("invalid keyProvider: %s", keyProvider)
 }
