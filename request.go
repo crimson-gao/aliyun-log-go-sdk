@@ -178,23 +178,27 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		}
 	}
 
+	if project.KeyProvider != "" {
+		headers["x-log-keyprovider"] = project.KeyProvider
+	}
+	realAccessKey, err := calcRealAccessKey(accessKeyID, accessKeySecret, project.KeyProvider)
+	if err != nil {
+		return nil, fmt.Errorf("fail to eval realAccessKey: %w", err)
+	}
+
 	var signer Signer
 	if project.AuthVersion == AuthV4 {
 		headers[HTTPHeaderLogDate] = dateTimeISO8601()
-		signer = NewSignerV4(accessKeyID, accessKeySecret, project.Region)
+		signer = NewSignerV4(accessKeyID, realAccessKey, project.Region)
 	} else {
 		headers[HTTPHeaderDate] = nowRFC1123()
-		signer = NewSignerV1(accessKeyID, accessKeySecret)
+		signer = NewSignerV1(accessKeyID, realAccessKey)
 	}
 	if err := signer.Sign(method, uri, headers, body); err != nil {
 		return nil, err
 	}
 
-	for k, v := range project.CommonHeaders {
-		if _, ok := headers[k]; !ok {
-			headers[k] = v
-		}
-	}
+	addHeadersAfterSign(project.CommonHeaders, headers)
 
 	// Initialize http request
 	reader := bytes.NewReader(body)
