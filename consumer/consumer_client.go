@@ -22,7 +22,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 		option.HeartbeatIntervalInSecond = 20
 	}
 	if option.HeartbeatTimeoutInSecond == 0 {
-		option.HeartbeatTimeoutInSecond = 60
+		option.HeartbeatTimeoutInSecond = option.HeartbeatIntervalInSecond * 3
 	}
 	if option.DataFetchIntervalInMs == 0 {
 		option.DataFetchIntervalInMs = 200
