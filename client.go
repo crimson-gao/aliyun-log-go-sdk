@@ -117,15 +117,6 @@ type Client struct {
 	httpConnConfig *HTTPConnConfig // works only if HTTPClient is absent
 }
 
-// init after all options has applied
-func (c *Client) initHttpClient() {
-	if c.HTTPClient == nil && c.httpConnConfig != nil {
-		c.HTTPClient = newHttpClient(c.httpConnConfig)
-	}
-}
-
-type ClientOption func(*Client)
-
 func convert(c *Client, projName string) *LogProject {
 	c.accessKeyLock.RLock()
 	defer c.accessKeyLock.RUnlock()
@@ -134,11 +125,10 @@ func convert(c *Client, projName string) *LogProject {
 
 func convertLocked(c *Client, projName string) *LogProject {
 	var p *LogProject
-	option := ProjectHTTPConnOption(c.httpConnConfig)
 	if c.credentialsProvider != nil {
-		p, _ = NewLogProjectV2(projName, c.Endpoint, c.credentialsProvider, option)
+		p, _ = NewLogProjectV2(projName, c.Endpoint, c.credentialsProvider)
 	} else { // back compatible
-		p, _ = NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret, option)
+		p, _ = NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	}
 
 	p.SecurityToken = c.SecurityToken
@@ -150,6 +140,7 @@ func convertLocked(c *Client, projName string) *LogProject {
 	if c.HTTPClient != nil {
 		p.httpClient = c.HTTPClient
 	}
+	p.httpConnConfig = c.httpConnConfig
 	if c.RequestTimeOut != time.Duration(0) {
 		p.WithRequestTimeout(c.RequestTimeOut)
 	}
@@ -160,17 +151,15 @@ func convertLocked(c *Client, projName string) *LogProject {
 	return p
 }
 
+func (c *Client) SetHTTPConnConfig(config *HTTPConnConfig) {
+	c.httpConnConfig = config
+	c.HTTPClient = getHttpClientWithConfig(c.HTTPClient, config)
+}
+
 // Set credentialsProvider for client and returns the same client.
 func (c *Client) WithCredentialsProvider(provider CredentialsProvider) *Client {
 	c.credentialsProvider = provider
 	return c
-}
-
-// Set HttpConnConfig, HttpConnConfig on works when custom http client is absent
-func ClientHTTPConnOption(config *HTTPConnConfig) ClientOption {
-	return func(c *Client) {
-		c.httpConnConfig = config
-	}
 }
 
 // SetUserAgent set a custom userAgent

@@ -28,7 +28,8 @@ func TestClientHttpClient(t *testing.T) {
 	}
 	{
 		// with config
-		c := CreateNormalInterface("cn-hangzhou.log.aliyuncs.com", "", "", "", ClientHTTPConnOption(config))
+		c := CreateNormalInterface("cn-hangzhou.log.aliyuncs.com", "", "", "")
+		c.SetHTTPConnConfig(config)
 		client := c.(*Client)
 		assert.NotNil(t, client.HTTPClient)
 		assert.NotEqual(t, client.HTTPClient, defaultHttpClient)
@@ -80,7 +81,8 @@ func TestClientHttpClient(t *testing.T) {
 	}
 	{
 		// with config and proxy
-		c := CreateNormalInterface("127.0.0.1", "", "", "", ClientHTTPConnOption(config))
+		c := CreateNormalInterface("127.0.0.1", "", "", "")
+		c.SetHTTPConnConfig(config)
 		client := c.(*Client)
 		assert.NotNil(t, client.HTTPClient)
 		assert.NotEqual(t, client.HTTPClient, defaultHttpClient)
@@ -134,7 +136,8 @@ func TestProjectHttpClient(t *testing.T) {
 	}
 	{
 		// with config
-		p, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "", ProjectHTTPConnOption(config))
+		p, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "")
+		p.SetHTTPConnConfig(config)
 		assert.NoError(t, err)
 		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
 		transport := p.httpClient.Transport.(*http.Transport)
@@ -162,7 +165,8 @@ func TestProjectHttpClient(t *testing.T) {
 	}
 	{
 		// with config and proxy
-		p, err := NewLogProject("test-project", "127.0.0.1", "", "", ProjectHTTPConnOption(config))
+		p, err := NewLogProject("test-project", "127.0.0.1", "", "")
+		p.SetHTTPConnConfig(config)
 		assert.NoError(t, err)
 		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
 		transport := p.httpClient.Transport.(*http.Transport)

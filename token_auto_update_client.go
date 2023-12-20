@@ -1978,3 +1978,7 @@ func (c *TokenAutoUpdateClient) ListEventStore(project string, offset, size int)
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) SetHTTPConnConfig(config *HTTPConnConfig) {
+	c.logClient.SetHTTPConnConfig(config)
+}

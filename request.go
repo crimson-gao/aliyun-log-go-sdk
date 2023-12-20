@@ -30,33 +30,47 @@ type HTTPConnConfig struct {
 	DisableKeepAlives bool          // defaults to defaultDisableKeepAlives if not set
 }
 
-// returns a new http client instance with default config
-func newDefaultHttpClient() *http.Client {
+func newDefaultTransport() *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.IdleConnTimeout = defaultHttpIdleTimeout
 	t.DisableKeepAlives = defaultDisableKeepAlives
+	return t
+}
+
+// returns a new http client instance with default config
+func newDefaultHttpClient() *http.Client {
 	return &http.Client{
-		Transport: t,
+		Transport: newDefaultTransport(),
 		Timeout:   defaultRequestTimeout,
 	}
 }
 
-// returns a new http client instance with given config
-// use default value if config is nil or has zero value
-func newHttpClient(config *HTTPConnConfig) *http.Client {
-	client := newDefaultHttpClient()
+// returns a new http client instance with given config if oldClient is nil,
+// return modified oldClient if oldClient is not nil
+//
+// if some field of config is not set, use default config value for that field
+func getHttpClientWithConfig(oldClient *http.Client, config *HTTPConnConfig) *http.Client {
+	newClient := oldClient
+	if oldClient == nil || oldClient == defaultHttpClient {
+		newClient = newDefaultHttpClient()
+	}
 	if config == nil {
-		return client
+		return newClient
 	}
 	if config.RequestTimeout > 0 {
-		client.Timeout = defaultRequestTimeout
+		newClient.Timeout = config.RequestTimeout
 	}
-	t := client.Transport.(*http.Transport)
-	if config.IdleTimeout > 0 {
-		t.IdleConnTimeout = config.IdleTimeout
+	if newClient.Transport == nil {
+		newClient.Transport = &http.Transport{}
 	}
-	t.DisableKeepAlives = config.DisableKeepAlives
-	return client
+	t, ok := newClient.Transport.(*http.Transport)
+	if ok {
+		if config.IdleTimeout > 0 {
+			t.IdleConnTimeout = config.IdleTimeout
+		}
+		t.DisableKeepAlives = config.DisableKeepAlives
+	}
+	return newClient
 }
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {

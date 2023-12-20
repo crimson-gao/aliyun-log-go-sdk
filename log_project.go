@@ -66,62 +66,44 @@ type LogProject struct {
 	httpConnConfig *HTTPConnConfig // works only if httpClient is absent
 }
 
-type ProjectOption func(*LogProject)
-
 // NewLogProject creates a new SLS project.
 //
 // Deprecated: use NewLogProjectV2 instead.
-func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string, options ...ProjectOption) (p *LogProject, err error) {
+func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogProject, err error) {
 	p = &LogProject{
 		Name:            name,
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
+		httpClient:      defaultHttpClient,
 		retryTimeout:    defaultRetryTimeout,
 	}
-	for _, options := range options {
-		options(p)
-	}
-	p.initHTTPClient()
 	p.parseEndpoint()
 	return p, nil
 }
 
 // NewLogProjectV2 creates a new SLS project, with a CredentialsProvider.
-func NewLogProjectV2(name, endpoint string, provider CredentialsProvider, options ...ProjectOption) (p *LogProject, err error) {
+func NewLogProjectV2(name, endpoint string, provider CredentialsProvider) (p *LogProject, err error) {
 	p = &LogProject{
 		Name:               name,
 		Endpoint:           endpoint,
+		httpClient:         defaultHttpClient,
 		retryTimeout:       defaultRetryTimeout,
 		credentialProvider: provider,
 	}
-	for _, options := range options {
-		options(p)
-	}
-	p.initHTTPClient()
 	p.parseEndpoint()
 	return p, nil
 }
 
-func (p *LogProject) initHTTPClient() {
-	if p.httpClient == nil && p.httpConnConfig != nil {
-		p.httpClient = newHttpClient(p.httpConnConfig)
-	} else {
-		p.httpClient = defaultHttpClient
-	}
+func (p *LogProject) SetHTTPConnConfig(config *HTTPConnConfig) {
+	p.httpConnConfig = config
+	p.httpClient = getHttpClientWithConfig(p.httpClient, config)
 }
 
 // With credentials provider
 func (p *LogProject) WithCredentialsProvider(provider CredentialsProvider) *LogProject {
 	p.credentialProvider = provider
 	return p
-}
-
-// Set HttpConnConfig, HttpConnConfig on works when custom http client is absent
-func ProjectHTTPConnOption(config *HTTPConnConfig) ProjectOption {
-	return func(p *LogProject) {
-		p.httpConnConfig = config
-	}
 }
 
 // WithToken add token parameter
@@ -133,9 +115,7 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 	if p.httpClient == defaultHttpClient || p.httpClient == nil {
-		httpClient := newDefaultHttpClient()
-		httpClient.Timeout = timeout
-		p.httpClient = httpClient
+		p.httpClient = getHttpClientWithConfig(nil, &HTTPConnConfig{RequestTimeout: timeout})
 	} else {
 		p.httpClient.Timeout = timeout
 	}
@@ -1175,22 +1155,9 @@ func (p *LogProject) parseEndpoint() {
 		// use direct ip proxy
 		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
 		if p.httpClient == nil || p.httpClient == defaultHttpClient {
-			httpClient := newDefaultHttpClient()
-			httpClient.Transport.(*http.Transport).Proxy = http.ProxyURL(url)
-			httpClient.Timeout = defaultRequestTimeout
-			p.httpClient = httpClient
+			p.httpClient = newDefaultHttpClientWithProxy(url)
 		} else {
-			if p.httpClient.Transport == nil {
-				p.httpClient.Transport = &http.Transport{
-					Proxy: http.ProxyURL(url),
-				}
-			} else if transport, ok := p.httpClient.Transport.(*http.Transport); ok {
-				transport.Proxy = http.ProxyURL(url)
-			} else {
-				p.httpClient.Transport = &http.Transport{
-					Proxy: http.ProxyURL(url),
-				}
-			}
+			setHttpProxy(p.httpClient, url)
 		}
 
 	}
@@ -1199,4 +1166,28 @@ func (p *LogProject) parseEndpoint() {
 	} else {
 		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
 	}
+}
+
+func newDefaultHttpClientWithProxy(proxy *url.URL) *http.Client {
+	client := newDefaultHttpClient()
+	setHttpProxy(client, proxy)
+	return client
+}
+
+func setHttpProxy(client *http.Client, proxy *url.URL) {
+	if client.Transport == nil {
+		t := newDefaultTransport()
+		t.Proxy = http.ProxyURL(proxy)
+		client.Transport = t
+		return
+	}
+	if t, ok := client.Transport.(*http.Transport); ok {
+		t.Proxy = http.ProxyURL(proxy)
+		return
+	}
+	// this should not happen often
+	level.Warn(Logger).Log("msg", "setHTTPProxy to a client with Transport not of type http.Transport, rewrite it using default http.Transport")
+	t := newDefaultTransport()
+	t.Proxy = http.ProxyURL(proxy)
+	client.Transport = t
 }
