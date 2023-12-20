@@ -1157,7 +1157,7 @@ func (p *LogProject) parseEndpoint() {
 		if p.httpClient == nil || p.httpClient == defaultHttpClient {
 			p.httpClient = newDefaultHttpClientWithProxy(url)
 		} else {
-			setHttpProxy(p.httpClient, url)
+			setHTTPProxy(p.httpClient, url)
 		}
 
 	}
@@ -1170,11 +1170,11 @@ func (p *LogProject) parseEndpoint() {
 
 func newDefaultHttpClientWithProxy(proxy *url.URL) *http.Client {
 	client := newDefaultHttpClient()
-	setHttpProxy(client, proxy)
+	setHTTPProxy(client, proxy)
 	return client
 }
 
-func setHttpProxy(client *http.Client, proxy *url.URL) {
+func setHTTPProxy(client *http.Client, proxy *url.URL) {
 	if client.Transport == nil {
 		t := newDefaultTransport()
 		t.Proxy = http.ProxyURL(proxy)
