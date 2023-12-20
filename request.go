@@ -15,14 +15,22 @@ import (
 	"golang.org/x/net/context"
 )
 
+var DefaultHttpClientIdleTimeOut = time.Second * 55
+
 // timeout configs
 var (
 	defaultRequestTimeout = 60 * time.Second
 	defaultRetryTimeout   = 90 * time.Second
-	defaultHttpClient     = &http.Client{
-		Timeout: defaultRequestTimeout,
-	}
+	defaultHttpClient     = initDefaultHttpClient()
 )
+
+func initDefaultHttpClient() *http.Client {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.IdleConnTimeout = DefaultHttpClientIdleTimeOut
+	return &http.Client{
+		Transport: t,
+	}
+}
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
 	if err == nil {
