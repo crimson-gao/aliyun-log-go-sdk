@@ -15,9 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// configure default http client for sls client, only works when no custom http client provided
-var DefaultHttpClientIdleTimeout = time.Second * 55
-var DefaultHttpClientDisableKeepALives = false
+var defaultHttpClientIdleTimeout = time.Second * 55
 
 // timeout configs
 var (
@@ -26,10 +24,13 @@ var (
 	defaultHttpClient     = initDefaultHttpClient()
 )
 
+func ResetDefaultHttpClient(client *http.Client) {
+	defaultHttpClient = client
+}
+
 func initDefaultHttpClient() *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.DisableKeepAlives = DefaultHttpClientDisableKeepALives
-	t.IdleConnTimeout = DefaultHttpClientIdleTimeout
+	t.IdleConnTimeout = defaultHttpClientIdleTimeout
 	return &http.Client{
 		Transport: t,
 	}
