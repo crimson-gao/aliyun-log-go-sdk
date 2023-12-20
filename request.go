@@ -40,6 +40,7 @@ func newDefaultHttpClient() *http.Client {
 	t.DisableKeepAlives = defaultHttpClientDisableKeepAlives
 	return &http.Client{
 		Transport: t,
+		Timeout:   defaultRequestTimeout,
 	}
 }
 

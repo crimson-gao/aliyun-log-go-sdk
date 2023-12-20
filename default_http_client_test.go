@@ -14,6 +14,8 @@ func TestDefaultHttpClient(t *testing.T) {
 	assert.Equal(t, project1.httpClient, defaultHttpClient)
 	assert.Equal(t, defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives, defaultHttpClientDisableKeepAlives)
 	assert.Equal(t, defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout, defaultHttpClientIdleTimeout)
+	assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+
 	// reset config
 	ResetDefaultHttpClientIdleTimeout(time.Second * 60)
 	ResetDefaultHttpClientDisableKeepAlives(true)
@@ -29,6 +31,7 @@ func TestDefaultHttpClient(t *testing.T) {
 	project2 = project2.WithRequestTimeout(time.Second * 33)
 	assert.NotEqual(t, project2.httpClient, defaultHttpClient) // changed
 	assert.Equal(t, project2.httpClient.Transport.(*http.Transport).DisableKeepAlives, true)
+	assert.NotEqual(t, defaultRequestTimeout, time.Second*33)
 	assert.Equal(t, project2.httpClient.Timeout, time.Second*33)
 	assert.NotEqual(t, defaultHttpClient.Timeout, project2.httpClient.Timeout)
 	// with proxy
