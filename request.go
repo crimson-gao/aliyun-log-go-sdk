@@ -15,24 +15,23 @@ import (
 	"golang.org/x/net/context"
 )
 
-var defaultHttpClientIdleTimeout = time.Second * 55
-var defaultHttpClientDisableKeepAlives = false
-
 // timeout configs
 var (
-	defaultRequestTimeout = 60 * time.Second
-	defaultRetryTimeout   = 90 * time.Second
-	defaultHttpClient     = newDefaultHttpClient()
+	defaultHttpClientIdleTimeout       = time.Second * 55
+	defaultHttpClientDisableKeepAlives = false
+	defaultRequestTimeout              = 60 * time.Second
+	defaultRetryTimeout                = 90 * time.Second
+	defaultHttpClient                  = newDefaultHttpClient()
 )
 
-func ResetDefaultHttpClientKeepAlives(keepAlives bool) {
-	defaultHttpClientDisableKeepAlives = !keepAlives
-	defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives = defaultHttpClientDisableKeepAlives
+func ResetDefaultHttpClientDisableKeepAlives(disableKeepAlives bool) {
+	defaultHttpClientDisableKeepAlives = disableKeepAlives
+	defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives = disableKeepAlives
 }
 
 func ResetDefaultHttpClientIdleTimeout(idleTimeout time.Duration) {
 	defaultHttpClientIdleTimeout = idleTimeout
-	defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout = defaultHttpClientIdleTimeout
+	defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout = idleTimeout
 }
 
 func newDefaultHttpClient() *http.Client {
