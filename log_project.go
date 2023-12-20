@@ -97,7 +97,7 @@ func NewLogProjectV2(name, endpoint string, provider CredentialsProvider) (p *Lo
 
 func (p *LogProject) SetHTTPConnConfig(config *HTTPConnConfig) {
 	p.httpConnConfig = config
-	p.httpClient = getHttpClientWithConfig(p.httpClient, config)
+	p.httpClient = getHttpClientWithConfig(config)
 }
 
 // With credentials provider
@@ -115,7 +115,7 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 	if p.httpClient == defaultHttpClient || p.httpClient == nil {
-		p.httpClient = getHttpClientWithConfig(nil, &HTTPConnConfig{RequestTimeout: timeout})
+		p.httpClient = getHttpClientWithConfig(&HTTPConnConfig{RequestTimeout: timeout})
 	} else {
 		p.httpClient.Timeout = timeout
 	}
@@ -1155,11 +1155,9 @@ func (p *LogProject) parseEndpoint() {
 		// use direct ip proxy
 		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
 		if p.httpClient == nil || p.httpClient == defaultHttpClient {
-			p.httpClient = newDefaultHttpClientWithProxy(url)
-		} else {
-			setHTTPProxy(p.httpClient, url)
+			p.httpClient = newDefaultHttpClient()
 		}
-
+		setHTTPProxy(p.httpClient, url)
 	}
 	if len(p.Name) == 0 {
 		p.baseURL = fmt.Sprintf("%s%s", scheme, host)
@@ -1168,25 +1166,7 @@ func (p *LogProject) parseEndpoint() {
 	}
 }
 
-func newDefaultHttpClientWithProxy(proxy *url.URL) *http.Client {
-	client := newDefaultHttpClient()
-	setHTTPProxy(client, proxy)
-	return client
-}
-
 func setHTTPProxy(client *http.Client, proxy *url.URL) {
-	if client.Transport == nil {
-		t := newDefaultTransport()
-		t.Proxy = http.ProxyURL(proxy)
-		client.Transport = t
-		return
-	}
-	if t, ok := client.Transport.(*http.Transport); ok {
-		t.Proxy = http.ProxyURL(proxy)
-		return
-	}
-	// this should not happen often
-	level.Warn(Logger).Log("msg", "setHTTPProxy to a client with Transport not of type http.Transport, rewrite it using default http.Transport")
 	t := newDefaultTransport()
 	t.Proxy = http.ProxyURL(proxy)
 	client.Transport = t

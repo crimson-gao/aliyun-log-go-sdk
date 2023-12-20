@@ -45,31 +45,20 @@ func newDefaultHttpClient() *http.Client {
 	}
 }
 
-// returns a new http client instance with given config if oldClient is nil,
-// return modified oldClient if oldClient is not nil
+// param config should not be nil
+// returns a new http client instance with given config
 //
 // if some field of config is not set, use default config value for that field
-func getHttpClientWithConfig(oldClient *http.Client, config *HTTPConnConfig) *http.Client {
-	newClient := oldClient
-	if oldClient == nil || oldClient == defaultHttpClient {
-		newClient = newDefaultHttpClient()
-	}
-	if config == nil {
-		return newClient
-	}
+func getHttpClientWithConfig(config *HTTPConnConfig) *http.Client {
+	newClient := newDefaultHttpClient()
 	if config.RequestTimeout > 0 {
 		newClient.Timeout = config.RequestTimeout
 	}
-	if newClient.Transport == nil {
-		newClient.Transport = &http.Transport{}
+	t := newClient.Transport.(*http.Transport)
+	if config.IdleTimeout > 0 {
+		t.IdleConnTimeout = config.IdleTimeout
 	}
-	t, ok := newClient.Transport.(*http.Transport)
-	if ok {
-		if config.IdleTimeout > 0 {
-			t.IdleConnTimeout = config.IdleTimeout
-		}
-		t.DisableKeepAlives = config.DisableKeepAlives
-	}
+	t.DisableKeepAlives = config.DisableKeepAlives
 	return newClient
 }
 
