@@ -97,7 +97,7 @@ func NewLogProjectV2(name, endpoint string, provider CredentialsProvider) (p *Lo
 
 func (p *LogProject) SetHTTPConnConfig(config *HTTPConnConfig) {
 	p.httpConnConfig = config
-	p.httpClient = getHttpClientWithConfig(config)
+	p.httpClient = getHTTPClientWithConfig(config)
 }
 
 // With credentials provider
@@ -115,7 +115,7 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 	if p.httpClient == defaultHttpClient || p.httpClient == nil {
-		p.httpClient = getHttpClientWithConfig(&HTTPConnConfig{RequestTimeout: timeout})
+		p.httpClient = getHTTPClientWithConfig(&HTTPConnConfig{RequestTimeout: timeout})
 	} else {
 		p.httpClient.Timeout = timeout
 	}
@@ -1155,7 +1155,7 @@ func (p *LogProject) parseEndpoint() {
 		// use direct ip proxy
 		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
 		if p.httpClient == nil || p.httpClient == defaultHttpClient {
-			p.httpClient = newDefaultHttpClient()
+			p.httpClient = newDefaultHTTPClient()
 		}
 		setHTTPProxy(p.httpClient, url)
 	}

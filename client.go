@@ -153,7 +153,7 @@ func convertLocked(c *Client, projName string) *LogProject {
 
 func (c *Client) SetHTTPConnConfig(config *HTTPConnConfig) {
 	c.httpConnConfig = config
-	c.HTTPClient = getHttpClientWithConfig(config)
+	c.HTTPClient = getHTTPClientWithConfig(config)
 }
 
 // Set credentialsProvider for client and returns the same client.

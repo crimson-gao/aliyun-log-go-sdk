@@ -19,8 +19,8 @@ import (
 var (
 	defaultRequestTimeout    = 60 * time.Second
 	defaultRetryTimeout      = 90 * time.Second
-	defaultHttpClient        = newDefaultHttpClient()
-	defaultHttpIdleTimeout   = time.Second * 55
+	defaultHttpClient        = newDefaultHTTPClient()
+	defaultHTTPIdleTimeout   = time.Second * 55
 	defaultDisableKeepAlives = false
 )
 
@@ -32,13 +32,13 @@ type HTTPConnConfig struct {
 
 func newDefaultTransport() *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.IdleConnTimeout = defaultHttpIdleTimeout
+	t.IdleConnTimeout = defaultHTTPIdleTimeout
 	t.DisableKeepAlives = defaultDisableKeepAlives
 	return t
 }
 
 // returns a new http client instance with default config
-func newDefaultHttpClient() *http.Client {
+func newDefaultHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: newDefaultTransport(),
 		Timeout:   defaultRequestTimeout,
@@ -49,8 +49,8 @@ func newDefaultHttpClient() *http.Client {
 // returns a new http client instance with given config
 //
 // if some field of config is not set, use default config value for that field
-func getHttpClientWithConfig(config *HTTPConnConfig) *http.Client {
-	newClient := newDefaultHttpClient()
+func getHTTPClientWithConfig(config *HTTPConnConfig) *http.Client {
+	newClient := newDefaultHTTPClient()
 	if config.RequestTimeout > 0 {
 		newClient.Timeout = config.RequestTimeout
 	}

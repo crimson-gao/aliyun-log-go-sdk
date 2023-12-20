@@ -17,7 +17,7 @@ func TestClientHttpClient(t *testing.T) {
 		if client.HTTPClient != nil {
 			transport := client.HTTPClient.Transport.(*http.Transport)
 			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
-			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		}
 	}
@@ -63,7 +63,7 @@ func TestClientHttpClient(t *testing.T) {
 		{
 			transport := defaultHttpClient.Transport.(*http.Transport)
 			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
-			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		}
 
@@ -74,7 +74,7 @@ func TestClientHttpClient(t *testing.T) {
 			transport := p.httpClient.Transport.(*http.Transport)
 			assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
 			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
-			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.NotNil(t, transport.Proxy)
 		}
 
@@ -124,7 +124,7 @@ func TestProjectHttpClient(t *testing.T) {
 		assert.Equal(t, p.httpClient, defaultHttpClient)
 		transport := p.httpClient.Transport.(*http.Transport)
 		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
-		assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+		assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 		assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		p = p.WithRequestTimeout(time.Second * 19)
 		assert.Equal(t, p.httpClient.Timeout, time.Second*19)
@@ -160,7 +160,7 @@ func TestProjectHttpClient(t *testing.T) {
 		transport := p.httpClient.Transport.(*http.Transport)
 		assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
 		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
-		assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+		assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 		assert.NotNil(t, transport.Proxy)
 	}
 	{
