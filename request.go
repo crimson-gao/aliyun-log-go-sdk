@@ -16,21 +16,29 @@ import (
 )
 
 var defaultHttpClientIdleTimeout = time.Second * 55
+var defaultHttpClientDisableKeepAlives = false
 
 // timeout configs
 var (
 	defaultRequestTimeout = 60 * time.Second
 	defaultRetryTimeout   = 90 * time.Second
-	defaultHttpClient     = initDefaultHttpClient()
+	defaultHttpClient     = newDefaultHttpClient()
 )
 
-func ResetDefaultHttpClient(client *http.Client) {
-	defaultHttpClient = client
+func ResetDefaultHttpClientKeepAlives(keepAlives bool) {
+	defaultHttpClientDisableKeepAlives = !keepAlives
+	defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives = defaultHttpClientDisableKeepAlives
 }
 
-func initDefaultHttpClient() *http.Client {
+func ResetDefaultHttpClientIdleTimeout(idleTimeout time.Duration) {
+	defaultHttpClientIdleTimeout = idleTimeout
+	defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout = defaultHttpClientIdleTimeout
+}
+
+func newDefaultHttpClient() *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.IdleConnTimeout = defaultHttpClientIdleTimeout
+	t.DisableKeepAlives = defaultHttpClientDisableKeepAlives
 	return &http.Client{
 		Transport: t,
 	}

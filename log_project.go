@@ -109,9 +109,9 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 	if p.httpClient == defaultHttpClient || p.httpClient == nil {
-		p.httpClient = &http.Client{
-			Timeout: timeout,
-		}
+		httpClient := newDefaultHttpClient()
+		httpClient.Timeout = timeout
+		p.httpClient = httpClient
 	} else {
 		p.httpClient.Timeout = timeout
 	}
@@ -1151,12 +1151,10 @@ func (p *LogProject) parseEndpoint() {
 		// use direct ip proxy
 		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
 		if p.httpClient == nil || p.httpClient == defaultHttpClient {
-			p.httpClient = &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(url),
-				},
-				Timeout: defaultRequestTimeout,
-			}
+			httpClient := newDefaultHttpClient()
+			httpClient.Transport.(*http.Transport).Proxy = http.ProxyURL(url)
+			httpClient.Timeout = defaultRequestTimeout
+			p.httpClient = httpClient
 		} else {
 			p.httpClient.Transport = &http.Transport{
 				Proxy: http.ProxyURL(url),
