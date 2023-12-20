@@ -8,40 +8,170 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDefaultHttpClient(t *testing.T) {
-	project1, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "")
-	assert.NoError(t, err)
-	assert.Equal(t, project1.httpClient, defaultHttpClient)
-	assert.Equal(t, defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives, defaultHttpClientDisableKeepAlives)
-	assert.Equal(t, defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout, defaultHttpClientIdleTimeout)
-	assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
-
-	// reset config
-	ResetDefaultHttpClientIdleTimeout(time.Second * 60)
-	ResetDefaultHttpClientDisableKeepAlives(true)
-	assert.Equal(t, defaultHttpClientDisableKeepAlives, true)
-	assert.Equal(t, defaultHttpClientIdleTimeout, time.Second*60)
-	project2, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "")
-	assert.NoError(t, err)
-	assert.Equal(t, project2.httpClient, defaultHttpClient)
-	client := project2.httpClient
-	assert.Equal(t, client.Transport.(*http.Transport).DisableKeepAlives, true)
-	assert.Equal(t, client.Transport.(*http.Transport).IdleConnTimeout, time.Second*60)
-	// with timeout
-	project2 = project2.WithRequestTimeout(time.Second * 33)
-	assert.NotEqual(t, project2.httpClient, defaultHttpClient) // changed
-	assert.Equal(t, project2.httpClient.Transport.(*http.Transport).DisableKeepAlives, true)
+func TestClientHttpClient(t *testing.T) {
 	assert.NotEqual(t, defaultRequestTimeout, time.Second*33)
-	assert.Equal(t, project2.httpClient.Timeout, time.Second*33)
-	assert.NotEqual(t, defaultHttpClient.Timeout, project2.httpClient.Timeout)
-	// with proxy
-	project3, err := NewLogProject("test-project", "127.0.0.1", "", "")
-	assert.NoError(t, err)
-	assert.NotEqual(t, project3.httpClient, defaultHttpClient) // changed
-	transport := project3.httpClient.Transport.(*http.Transport)
-	assert.Equal(t, project3.httpClient.Timeout, defaultRequestTimeout)
-	assert.Equal(t, transport.DisableKeepAlives, true)
-	assert.Equal(t, transport.IdleConnTimeout, time.Second*60)
-	assert.NotNil(t, transport.Proxy)
+	{
+		c := CreateNormalInterface("cn-hangzhou.log.aliyuncs.com", "", "", "")
+		client := c.(*Client)
+		assert.True(t, client.HTTPClient == defaultHttpClient || client.HTTPClient == nil)
+		if client.HTTPClient != nil {
+			transport := client.HTTPClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		}
+	}
 
+	config := &HTTPConnConfig{
+		IdleTimeout:       time.Second * 60,
+		DisableKeepAlives: true,
+	}
+	{
+		// with config
+		c := CreateNormalInterface("cn-hangzhou.log.aliyuncs.com", "", "", "", ClientHTTPConnOption(config))
+		client := c.(*Client)
+		assert.NotNil(t, client.HTTPClient)
+		assert.NotEqual(t, client.HTTPClient, defaultHttpClient)
+		{
+			transport := client.HTTPClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		}
+
+		// check project converted
+		p := convert(client, "test")
+		assert.NotNil(t, p.httpClient)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		{
+			transport := p.httpClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		}
+
+		// with config and timeout
+		p = p.WithRequestTimeout(time.Second * 33)
+		assert.NotEqual(t, defaultHttpClient.Timeout, p.httpClient.Timeout)
+	}
+	{
+		// with proxy
+		c := CreateNormalInterface("127.0.0.1", "", "", "")
+		client := c.(*Client)
+		assert.True(t, client.HTTPClient == defaultHttpClient || client.HTTPClient == nil)
+		{
+			transport := defaultHttpClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		}
+
+		p := convert(client, "test")
+		assert.NotNil(t, p.httpClient)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		{
+			transport := p.httpClient.Transport.(*http.Transport)
+			assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
+			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+			assert.NotNil(t, transport.Proxy)
+		}
+
+	}
+	{
+		// with config and proxy
+		c := CreateNormalInterface("127.0.0.1", "", "", "", ClientHTTPConnOption(config))
+		client := c.(*Client)
+		assert.NotNil(t, client.HTTPClient)
+		assert.NotEqual(t, client.HTTPClient, defaultHttpClient)
+		{
+			transport := client.HTTPClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		}
+
+		p := convert(client, "test")
+		assert.NotNil(t, p.httpClient)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		{
+			transport := p.httpClient.Transport.(*http.Transport)
+			assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
+			assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+			assert.NotNil(t, transport.Proxy)
+		}
+
+		p = p.WithRequestTimeout(time.Second * 33)
+		assert.Equal(t, p.httpClient.Timeout, time.Second*33)
+		{
+			transport := p.httpClient.Transport.(*http.Transport)
+			assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+			assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+			assert.NotNil(t, transport.Proxy)
+		}
+
+	}
+}
+
+func TestProjectHttpClient(t *testing.T) {
+	assert.NotEqual(t, defaultRequestTimeout, time.Second*33)
+	{
+		p, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "")
+		assert.NoError(t, err)
+		assert.Equal(t, p.httpClient, defaultHttpClient)
+		transport := p.httpClient.Transport.(*http.Transport)
+		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
+		assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+		assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
+		p = p.WithRequestTimeout(time.Second * 19)
+		assert.Equal(t, p.httpClient.Timeout, time.Second*19)
+	}
+
+	config := &HTTPConnConfig{
+		IdleTimeout:       time.Second * 60,
+		DisableKeepAlives: true,
+	}
+	{
+		// with config
+		p, err := NewLogProject("test-project", "cn-hangzhou.log.aliyuncs.com", "", "", ProjectHTTPConnOption(config))
+		assert.NoError(t, err)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		transport := p.httpClient.Transport.(*http.Transport)
+		assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+		assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+
+		// with config and timeout
+		p = p.WithRequestTimeout(time.Second * 33)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		transport = p.httpClient.Transport.(*http.Transport)
+		assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+		assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+		assert.NotEqual(t, defaultHttpClient.Timeout, p.httpClient.Timeout)
+	}
+	{
+		// with proxy
+		p, err := NewLogProject("test-project", "127.0.0.1", "", "")
+		assert.NoError(t, err)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		transport := p.httpClient.Transport.(*http.Transport)
+		assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
+		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
+		assert.Equal(t, transport.IdleConnTimeout, defaultHttpIdleTimeout)
+		assert.NotNil(t, transport.Proxy)
+	}
+	{
+		// with config and proxy
+		p, err := NewLogProject("test-project", "127.0.0.1", "", "", ProjectHTTPConnOption(config))
+		assert.NoError(t, err)
+		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
+		transport := p.httpClient.Transport.(*http.Transport)
+		assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
+		assert.Equal(t, transport.DisableKeepAlives, config.DisableKeepAlives)
+		assert.Equal(t, transport.IdleConnTimeout, config.IdleTimeout)
+		assert.NotNil(t, transport.Proxy)
+
+		p = p.WithRequestTimeout(time.Second * 19)
+		assert.Equal(t, p.httpClient.Timeout, time.Second*19)
+	}
 }

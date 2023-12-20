@@ -13,8 +13,8 @@ import (
 //
 //	  provider := NewStaticCredProvider(accessKeyID, accessKeySecret, securityToken)
 //		client := CreateNormalInterfaceV2(endpoint, provider)
-func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken string) ClientInterface {
-	return &Client{
+func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken string, options ...ClientOption) ClientInterface {
+	client := &Client{
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
@@ -26,6 +26,11 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 			securityToken,
 		),
 	}
+	for _, option := range options {
+		option(client)
+	}
+	client.initHttpClient()
+	return client
 }
 
 // CreateNormalInterfaceV2 create a normal client, with a CredentialsProvider.
@@ -34,11 +39,16 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 // expirable credentials for security.
 //
 // See [credentials_provider.go] for more details.
-func CreateNormalInterfaceV2(endpoint string, credentialsProvider CredentialsProvider) ClientInterface {
-	return &Client{
+func CreateNormalInterfaceV2(endpoint string, credentialsProvider CredentialsProvider, options ...ClientOption) ClientInterface {
+	client := &Client{
 		Endpoint:            endpoint,
 		credentialsProvider: credentialsProvider,
 	}
+	for _, option := range options {
+		option(client)
+	}
+	client.initHttpClient()
+	return client
 }
 
 type UpdateTokenFunction = func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
@@ -54,13 +64,13 @@ type UpdateTokenFunction = func() (accessKeyID, accessKeySecret, securityToken s
 //	  client := CreateNormalInterfaceV2(endpoint, provider)
 //
 // @note TokenAutoUpdateClient will destroy when shutdown channel is closed
-func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFunction, shutdown <-chan struct{}) (client ClientInterface, err error) {
+func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFunction, shutdown <-chan struct{}, options ...ClientOption) (client ClientInterface, err error) {
 	accessKeyID, accessKeySecret, securityToken, expireTime, err := tokenUpdateFunc()
 	if err != nil {
 		return nil, err
 	}
 	tauc := &TokenAutoUpdateClient{
-		logClient:              CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken),
+		logClient:              CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken, options...),
 		shutdown:               shutdown,
 		tokenUpdateFunc:        tokenUpdateFunc,
 		maxTryTimes:            3,

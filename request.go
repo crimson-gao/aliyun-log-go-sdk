@@ -17,31 +17,46 @@ import (
 
 // timeout configs
 var (
-	defaultHttpClientIdleTimeout       = time.Second * 55
-	defaultHttpClientDisableKeepAlives = false
-	defaultRequestTimeout              = 60 * time.Second
-	defaultRetryTimeout                = 90 * time.Second
-	defaultHttpClient                  = newDefaultHttpClient()
+	defaultRequestTimeout    = 60 * time.Second
+	defaultRetryTimeout      = 90 * time.Second
+	defaultHttpClient        = newDefaultHttpClient()
+	defaultHttpIdleTimeout   = time.Second * 55
+	defaultDisableKeepAlives = false
 )
 
-func ResetDefaultHttpClientDisableKeepAlives(disableKeepAlives bool) {
-	defaultHttpClientDisableKeepAlives = disableKeepAlives
-	defaultHttpClient.Transport.(*http.Transport).DisableKeepAlives = disableKeepAlives
+type HTTPConnConfig struct {
+	IdleTimeout       time.Duration // Connection idle timeout, defaults to defaultHttpIdleTimeout if not set
+	RequestTimeout    time.Duration // defaults to defaultRequestTimeout if not set
+	DisableKeepAlives bool          // defaults to defaultDisableKeepAlives if not set
 }
 
-func ResetDefaultHttpClientIdleTimeout(idleTimeout time.Duration) {
-	defaultHttpClientIdleTimeout = idleTimeout
-	defaultHttpClient.Transport.(*http.Transport).IdleConnTimeout = idleTimeout
-}
-
+// returns a new http client instance with default config
 func newDefaultHttpClient() *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.IdleConnTimeout = defaultHttpClientIdleTimeout
-	t.DisableKeepAlives = defaultHttpClientDisableKeepAlives
+	t.IdleConnTimeout = defaultHttpIdleTimeout
+	t.DisableKeepAlives = defaultDisableKeepAlives
 	return &http.Client{
 		Transport: t,
 		Timeout:   defaultRequestTimeout,
 	}
+}
+
+// returns a new http client instance with given config
+// use default value if config is nil or has zero value
+func newHttpClient(config *HTTPConnConfig) *http.Client {
+	client := newDefaultHttpClient()
+	if config == nil {
+		return client
+	}
+	if config.RequestTimeout > 0 {
+		client.Timeout = defaultRequestTimeout
+	}
+	t := client.Transport.(*http.Transport)
+	if config.IdleTimeout > 0 {
+		t.IdleConnTimeout = config.IdleTimeout
+	}
+	t.DisableKeepAlives = config.DisableKeepAlives
+	return client
 }
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {

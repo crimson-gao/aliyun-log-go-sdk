@@ -61,43 +61,67 @@ type LogProject struct {
 	//
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
-	CommonHeaders map[string]string
-	InnerHeaders  map[string]string
+	CommonHeaders  map[string]string
+	InnerHeaders   map[string]string
+	httpConnConfig *HTTPConnConfig // works only if httpClient is absent
 }
+
+type ProjectOption func(*LogProject)
 
 // NewLogProject creates a new SLS project.
 //
 // Deprecated: use NewLogProjectV2 instead.
-func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogProject, err error) {
+func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string, options ...ProjectOption) (p *LogProject, err error) {
 	p = &LogProject{
 		Name:            name,
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
-		httpClient:      defaultHttpClient,
 		retryTimeout:    defaultRetryTimeout,
 	}
+	for _, options := range options {
+		options(p)
+	}
+	p.initHTTPClient()
 	p.parseEndpoint()
 	return p, nil
 }
 
 // NewLogProjectV2 creates a new SLS project, with a CredentialsProvider.
-func NewLogProjectV2(name, endpoint string, provider CredentialsProvider) (p *LogProject, err error) {
+func NewLogProjectV2(name, endpoint string, provider CredentialsProvider, options ...ProjectOption) (p *LogProject, err error) {
 	p = &LogProject{
 		Name:               name,
 		Endpoint:           endpoint,
-		httpClient:         defaultHttpClient,
 		retryTimeout:       defaultRetryTimeout,
 		credentialProvider: provider,
 	}
+	for _, options := range options {
+		options(p)
+	}
+	p.initHTTPClient()
 	p.parseEndpoint()
 	return p, nil
+}
+
+func (p *LogProject) initHTTPClient() {
+	if p.httpClient == nil && p.httpConnConfig != nil {
+		p.httpClient = newHttpClient(p.httpConnConfig)
+	} else {
+		p.httpClient = defaultHttpClient
+	}
 }
 
 // With credentials provider
 func (p *LogProject) WithCredentialsProvider(provider CredentialsProvider) *LogProject {
 	p.credentialProvider = provider
 	return p
+}
+
+// Set HttpConnConfig, HttpConnConfig on works when custom http client is absent
+func ProjectHTTPConnOption(config *HTTPConnConfig) ProjectOption {
+	return func(p *LogProject) {
+		p.httpConnConfig = config
+	}
 }
 
 // WithToken add token parameter
@@ -1156,8 +1180,16 @@ func (p *LogProject) parseEndpoint() {
 			httpClient.Timeout = defaultRequestTimeout
 			p.httpClient = httpClient
 		} else {
-			p.httpClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(url),
+			if p.httpClient.Transport == nil {
+				p.httpClient.Transport = &http.Transport{
+					Proxy: http.ProxyURL(url),
+				}
+			} else if transport, ok := p.httpClient.Transport.(*http.Transport); ok {
+				transport.Proxy = http.ProxyURL(url)
+			} else {
+				p.httpClient.Transport = &http.Transport{
+					Proxy: http.ProxyURL(url),
+				}
 			}
 		}
 
