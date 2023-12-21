@@ -19,7 +19,7 @@ import (
 var (
 	defaultRequestTimeout  = 60 * time.Second
 	defaultRetryTimeout    = 90 * time.Second
-	defaultHttpClient      = newDefaultHTTPClient()
+	defaultHttpClient      = newDefaultHTTPClient(defaultRequestTimeout)
 	defaultHTTPIdleTimeout = time.Second * 55
 )
 
@@ -30,10 +30,10 @@ func newDefaultTransport() *http.Transport {
 }
 
 // returns a new http client instance with default config
-func newDefaultHTTPClient() *http.Client {
+func newDefaultHTTPClient(requestTimeout time.Duration) *http.Client {
 	return &http.Client{
 		Transport: newDefaultTransport(),
-		Timeout:   defaultRequestTimeout,
+		Timeout:   requestTimeout,
 	}
 }
 
