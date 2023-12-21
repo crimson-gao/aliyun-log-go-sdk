@@ -24,12 +24,6 @@ var (
 	defaultDisableKeepAlives = false
 )
 
-type HTTPConnConfig struct {
-	IdleTimeout       time.Duration // Connection idle timeout, defaults to defaultHttpIdleTimeout if not set
-	RequestTimeout    time.Duration // defaults to defaultRequestTimeout if not set
-	DisableKeepAlives bool          // defaults to defaultDisableKeepAlives if not set
-}
-
 func newDefaultTransport() *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.IdleConnTimeout = defaultHTTPIdleTimeout
@@ -43,23 +37,6 @@ func newDefaultHTTPClient() *http.Client {
 		Transport: newDefaultTransport(),
 		Timeout:   defaultRequestTimeout,
 	}
-}
-
-// param config should not be nil
-// returns a new http client instance with given config
-//
-// if some field of config is not set, use default config value for that field
-func getHTTPClientWithConfig(config *HTTPConnConfig) *http.Client {
-	newClient := newDefaultHTTPClient()
-	if config.RequestTimeout > 0 {
-		newClient.Timeout = config.RequestTimeout
-	}
-	t := newClient.Transport.(*http.Transport)
-	if config.IdleTimeout > 0 {
-		t.IdleConnTimeout = config.IdleTimeout
-	}
-	t.DisableKeepAlives = config.DisableKeepAlives
-	return newClient
 }
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {

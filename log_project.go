@@ -61,9 +61,8 @@ type LogProject struct {
 	//
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
-	CommonHeaders  map[string]string
-	InnerHeaders   map[string]string
-	httpConnConfig *HTTPConnConfig // works only if httpClient is absent
+	CommonHeaders map[string]string
+	InnerHeaders  map[string]string
 }
 
 // NewLogProject creates a new SLS project.
@@ -95,11 +94,6 @@ func NewLogProjectV2(name, endpoint string, provider CredentialsProvider) (p *Lo
 	return p, nil
 }
 
-func (p *LogProject) SetHTTPConnConfig(config *HTTPConnConfig) {
-	p.httpConnConfig = config
-	p.httpClient = getHTTPClientWithConfig(config)
-}
-
 // With credentials provider
 func (p *LogProject) WithCredentialsProvider(provider CredentialsProvider) *LogProject {
 	p.credentialProvider = provider
@@ -115,7 +109,8 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
 	if p.httpClient == defaultHttpClient || p.httpClient == nil {
-		p.httpClient = getHTTPClientWithConfig(&HTTPConnConfig{RequestTimeout: timeout})
+		p.httpClient = newDefaultHTTPClient()
+		p.httpClient.Timeout = timeout
 	} else {
 		p.httpClient.Timeout = timeout
 	}

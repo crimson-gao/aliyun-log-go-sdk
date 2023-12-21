@@ -112,9 +112,8 @@ type Client struct {
 	// User defined common headers.
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
-	CommonHeaders  map[string]string
-	InnerHeaders   map[string]string
-	httpConnConfig *HTTPConnConfig // works only if HTTPClient is absent
+	CommonHeaders map[string]string
+	InnerHeaders  map[string]string
 }
 
 func convert(c *Client, projName string) *LogProject {
@@ -140,7 +139,6 @@ func convertLocked(c *Client, projName string) *LogProject {
 	if c.HTTPClient != nil {
 		p.httpClient = c.HTTPClient
 	}
-	p.httpConnConfig = c.httpConnConfig
 	if c.RequestTimeOut != time.Duration(0) {
 		p.WithRequestTimeout(c.RequestTimeOut)
 	}
@@ -149,11 +147,6 @@ func convertLocked(c *Client, projName string) *LogProject {
 	}
 
 	return p
-}
-
-func (c *Client) SetHTTPConnConfig(config *HTTPConnConfig) {
-	c.httpConnConfig = config
-	c.HTTPClient = getHTTPClientWithConfig(config)
 }
 
 // Set credentialsProvider for client and returns the same client.
