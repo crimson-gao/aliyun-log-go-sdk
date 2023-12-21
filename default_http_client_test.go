@@ -16,7 +16,6 @@ func TestClientHttpClient(t *testing.T) {
 		assert.True(t, client.HTTPClient == defaultHttpClient || client.HTTPClient == nil)
 		if client.HTTPClient != nil {
 			transport := client.HTTPClient.Transport.(*http.Transport)
-			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
 			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		}
@@ -29,7 +28,6 @@ func TestClientHttpClient(t *testing.T) {
 		assert.True(t, client.HTTPClient == defaultHttpClient || client.HTTPClient == nil)
 		{
 			transport := defaultHttpClient.Transport.(*http.Transport)
-			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
 			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		}
@@ -40,7 +38,6 @@ func TestClientHttpClient(t *testing.T) {
 		{
 			transport := p.httpClient.Transport.(*http.Transport)
 			assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
-			assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
 			assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 			assert.NotNil(t, transport.Proxy)
 		}
@@ -56,7 +53,6 @@ func TestProjectHttpClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, p.httpClient, defaultHttpClient)
 		transport := p.httpClient.Transport.(*http.Transport)
-		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
 		assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 		assert.Equal(t, defaultHttpClient.Timeout, defaultRequestTimeout)
 		p = p.WithRequestTimeout(time.Second * 19)
@@ -70,7 +66,6 @@ func TestProjectHttpClient(t *testing.T) {
 		assert.NotEqual(t, p.httpClient, defaultHttpClient) // changed
 		transport := p.httpClient.Transport.(*http.Transport)
 		assert.Equal(t, p.httpClient.Timeout, defaultRequestTimeout)
-		assert.Equal(t, transport.DisableKeepAlives, defaultDisableKeepAlives)
 		assert.Equal(t, transport.IdleConnTimeout, defaultHTTPIdleTimeout)
 		assert.NotNil(t, transport.Proxy)
 		p = p.WithRequestTimeout(time.Second * 19)

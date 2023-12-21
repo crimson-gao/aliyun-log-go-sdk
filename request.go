@@ -17,17 +17,15 @@ import (
 
 // timeout configs
 var (
-	defaultRequestTimeout    = 60 * time.Second
-	defaultRetryTimeout      = 90 * time.Second
-	defaultHttpClient        = newDefaultHTTPClient()
-	defaultHTTPIdleTimeout   = time.Second * 55
-	defaultDisableKeepAlives = false
+	defaultRequestTimeout  = 60 * time.Second
+	defaultRetryTimeout    = 90 * time.Second
+	defaultHttpClient      = newDefaultHTTPClient()
+	defaultHTTPIdleTimeout = time.Second * 55
 )
 
 func newDefaultTransport() *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.IdleConnTimeout = defaultHTTPIdleTimeout
-	t.DisableKeepAlives = defaultDisableKeepAlives
 	return t
 }
 
