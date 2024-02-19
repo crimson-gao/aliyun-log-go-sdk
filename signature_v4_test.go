@@ -147,7 +147,7 @@ func (s *SignerV4Suite) TestSignV1Case1() {
 	}
 	mockAKID := "mockAccessKeyID"
 	mockAKSec := "mockAccessKeySecret"
-	expSign := "WEpScax8/eN1zKS8C9cYHxUV7ro="
+	expSign := "hNNf3Nv33R//Gxu++a0anEi7d5xbS5gapaPd/6eIxTk="
 	expAuth := fmt.Sprintf("SLS %s:%s", mockAKID, expSign)
 
 	v1 := SignerV1{accessKeyID: mockAKID, accessKeySecret: mockAKSec}
@@ -176,7 +176,7 @@ func (s *SignerV4Suite) TestSignV1Case2() {
 	}
 	mockAKID := "mockAccessKeyID"
 	mockAKSec := "mockAccessKeySecret"
-	expSign := "XRBlvydnG93Kia32cbzLIpikZmk="
+	expSign := "GGHiEECbn3P3QaMh2fLMs94z95xDVeQmhULhe54o0S4="
 	expAuth := fmt.Sprintf("SLS %s:%s", mockAKID, expSign)
 	v1 := SignerV1{
 		accessKeyID:     mockAKID,
