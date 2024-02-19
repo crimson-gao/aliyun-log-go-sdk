@@ -3,10 +3,11 @@ package sls
 import (
 	"crypto/md5"
 	"fmt"
+	"testing"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type SignerV1Suite struct {
@@ -31,11 +32,11 @@ func (s *SignerV1Suite) SetupTest() {
 func (s *SignerV1Suite) TestSignatureGet() {
 	headers := map[string]string{
 		"x-log-apiversion":      "0.6.0",
-		"x-log-signaturemethod": "hmac-sha1",
+		"x-log-signaturemethod": "hmac-sha256",
 		"x-log-bodyrawsize":     "0",
 		"Date":                  "Mon, 3 Jan 2010 08:33:47 GMT",
 	}
-	digest := "Rwm6cTKzoti4HWoe+GKcb6Kv07E="
+	digest := "WEpScax8/eN1zKS8C9cYHxUV7ro="
 	expectedAuthStr := fmt.Sprintf("SLS %v:%v", s.AccessKeyID, digest)
 
 	err := s.signer.Sign("GET", "/logstores", headers, nil)
@@ -95,7 +96,7 @@ func (s *SignerV1Suite) TestSignaturePost() {
 		"Date":                  "Mon, 3 Jan 2010 08:33:47 GMT",
 	}
 
-	digest := "87xQWqFaOSewqRIma8kPjGYlXHc="
+	digest := "XRBlvydnG93Kia32cbzLIpikZmk="
 	err = s.signer.Sign("GET", "/logstores/app_log", h, body)
 	if err != nil {
 		assert.Fail(s.T(), err.Error())
