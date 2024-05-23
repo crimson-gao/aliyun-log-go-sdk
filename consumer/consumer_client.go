@@ -144,9 +144,9 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 		Project:          consumer.option.Project,
 		Logstore:         consumer.option.Logstore,
 		ShardID:          shardId,
-		Query:            consumer.option.Query,
 		Cursor:           cursor,
 		LogGroupMaxCount: consumer.option.MaxFetchLogGroupCount,
+		CompressType:     consumer.option.CompressType,
 	}
 	for retry := 0; retry < 3; retry++ {
 		gl, plm, err = consumer.client.PullLogsWithQuery(plr)

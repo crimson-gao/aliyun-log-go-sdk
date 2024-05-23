@@ -31,6 +31,7 @@ var MaxCompletedRetryLatency = 5 * time.Minute
 const (
 	Compress_LZ4  = iota // 0
 	Compress_None        // 1
+	Compress_ZSTD        // 2
 	Compress_Max         // max compress type(just for filter invalid compress type)
 )
 

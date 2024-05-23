@@ -42,6 +42,7 @@ type LogHubConfig struct {
 	// 	is to retain all old log files (though MaxAge may still cause them to get
 	// 	deleted.)
 	//:param LogCompass: Compress determines if the rotated log files should be compressed using gzip.
+	//:param CompressType: CompressType is the type of compression to use, default 0 standand for lz4
 	//:param HTTPClient: custom http client for sending data to sls
 	//:param AutoCommitDisabled: whether to disable commit checkpoint automatically, default is false, means auto commit checkpoint
 	//	  Note that if you set autocommit to false, you must use InitConsumerWorkerWithCheckpointTracker instead of InitConsumerWorker
@@ -70,6 +71,7 @@ type LogHubConfig struct {
 	LogMaxSize                int
 	LogMaxBackups             int
 	LogCompass                bool
+	CompressType              int
 	HTTPClient                *http.Client
 	SecurityToken             string
 	AutoCommitDisabled        bool
