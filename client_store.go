@@ -109,6 +109,14 @@ func (c *Client) PutLogsWithMetricStoreURL(project, logstore string, lg *LogGrou
 	return ls.PutLogs(lg)
 }
 
+func (c *Client) PostLogStoreLogsV2(project, logstore string, req *PostLogStoreLogsRequest) (err error) {
+	ls := convertLogstore(c, project, logstore)
+	if err := ls.SetPutLogCompressType(req.CompressType); err != nil {
+		return err
+	}
+	return ls.PostLogStoreLogs(req.LogGroup, req.HashKey)
+}
+
 // PostRawLogWithCompressType put raw log data to log service, no marshal
 func (c *Client) PostRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int, hashKey *string) (err error) {
 	ls := convertLogstore(c, project, logstore)

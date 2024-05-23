@@ -2010,3 +2010,13 @@ func (c *TokenAutoUpdateClient) ListEventStore(project string, offset, size int)
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) PostLogStoreLogsV2(project, logstore string, req *PostLogStoreLogsRequest) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.PostLogStoreLogsV2(project, logstore, req)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}

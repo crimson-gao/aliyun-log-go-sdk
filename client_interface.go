@@ -252,6 +252,7 @@ type ClientInterface interface {
 	// PostLogStoreLogs put logs into Shard logstore by hashKey.
 	// The callers should transform user logs into LogGroup.
 	PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKey *string) (err error)
+	PostLogStoreLogsV2(project, logstore string, req *PostLogStoreLogsRequest) (err error)
 	// PostRawLogWithCompressType put logs into logstore with specific compress type and hashKey.
 	PostRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int, hashKey *string) (err error)
 	// PutLogsWithCompressType put logs into logstore with specific compress type.

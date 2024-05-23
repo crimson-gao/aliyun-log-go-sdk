@@ -57,6 +57,7 @@ type ProducerConfig struct {
 	AccessKeySecret  string // Deprecated: use CredentialsProvider instead
 	Region           string
 	AuthVersion      sls.AuthVersionType
+	CompressType     int // only work for logstore now
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
@@ -74,5 +75,6 @@ func GetDefaultProducerConfig() *ProducerConfig {
 		Buckets:               64,
 		MaxBatchCount:         4096,
 		NoRetryStatusCodeList: []int{400, 404},
+		CompressType:          sls.Compress_LZ4,
 	}
 }

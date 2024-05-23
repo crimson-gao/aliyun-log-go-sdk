@@ -321,3 +321,9 @@ const (
 	CHARGE_BY_FUNCTION    = "ChargeByFunction"
 	CHARGE_BY_DATA_INGEST = "ChargeByDataIngest"
 )
+
+type PostLogStoreLogsRequest struct {
+	LogGroup     *LogGroup
+	HashKey      *string
+	CompressType int
+}
