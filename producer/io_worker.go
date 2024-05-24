@@ -54,9 +54,6 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch) {
 			HashKey:      producerBatch.getShardHash(),
 			CompressType: ioWorker.producer.producerConfig.CompressType,
 		}
-		if producerBatch.shardHash != nil {
-			req.HashKey = producerBatch.getShardHash()
-		}
 		err = ioWorker.client.PostLogStoreLogsV2(producerBatch.getProject(), producerBatch.getLogstore(), req)
 	}
 	if err == nil {
