@@ -598,29 +598,30 @@ func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, pullL
 			return nil, nil, fmt.Errorf("unexpected compress type: %d", compressType)
 		}
 	}
+	// todo: add query meta
 	// If query is not nil, extract more headers
-	if plr.Query != "" {
-		pullLogMeta.RawSizeBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatasize")
-		if err != nil {
-			return
-		}
-		pullLogMeta.DataCountBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatacount")
-		if err != nil {
-			return
-		}
-		pullLogMeta.Lines, err = ParseHeaderInt(r, "X-Log-Resultlines")
-		if err != nil {
-			return
-		}
-		pullLogMeta.LinesBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatalines")
-		if err != nil {
-			return
-		}
-		pullLogMeta.FailedLines, err = ParseHeaderInt(r, "X-Log-Failedlines")
-		if err != nil {
-			return
-		}
-	}
+	// if plr.Query != "" {
+	// 	pullLogMeta.RawSizeBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatasize")
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	pullLogMeta.DataCountBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatacount")
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	pullLogMeta.Lines, err = ParseHeaderInt(r, "X-Log-Resultlines")
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	pullLogMeta.LinesBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatalines")
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	pullLogMeta.FailedLines, err = ParseHeaderInt(r, "X-Log-Failedlines")
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// }
 	return
 }
 

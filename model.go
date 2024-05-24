@@ -78,12 +78,13 @@ type PullLogMeta struct {
 	NextCursor              string
 	Netflow                 int
 	RawSize                 int
-	RawSizeBeforeQuery      int
 	RawDataCountBeforeQuery int
-	Lines                   int
-	LinesBeforeQuery        int
-	FailedLines             int
-	DataCountBeforeQuery    int
+	// todo: add query meta
+	// Lines                   int
+	// RawSizeBeforeQuery      int
+	// LinesBeforeQuery        int
+	// FailedLines             int
+	// DataCountBeforeQuery    int
 }
 
 // GetHistogramsResponse defines response from GetHistograms call
