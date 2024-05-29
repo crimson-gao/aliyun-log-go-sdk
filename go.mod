@@ -7,7 +7,6 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.2

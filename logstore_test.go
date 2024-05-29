@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
+	lz4 "github.com/pierrec/lz4"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -457,8 +457,9 @@ func (s *LogstoreTestSuite) TestLogStoreWriteErrorMock() {
 	body, _ := proto.Marshal(lg)
 
 	// Compresse body with lz4
-	out := make([]byte, lz4.CompressBound(body))
-	n, _ := lz4.Compress(body, out)
+	var hashTable [1 << 16]int
+	out := make([]byte, lz4.CompressBlockBound(len(body)))
+	n, _ := lz4.CompressBlock(body, out, hashTable[:])
 
 	h := map[string]string{
 		"x-log-compresstype": "lz4",
