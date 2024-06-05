@@ -44,6 +44,7 @@ type LogProject struct {
 	CreateTime         string `json:"createTime"`                   // unix time seconds, eg 1524539357
 	LastModifyTime     string `json:"lastModifyTime"`               // unix time seconds, eg 1524539357
 	DataRedundancyType string `json:"dataRedundancyType,omitempty"` // data redundancy type, valid values: ['LRS', 'ZRS']
+	Location           string `json:"location,omitempty"`           // location, eg. cn-beijing-b
 
 	Endpoint           string // IP or hostname of SLS endpoint
 	AccessKeyID        string // Deprecated: use CredentialsProvider instead
