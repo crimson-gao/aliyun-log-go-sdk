@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -21,7 +23,9 @@ const (
 )
 
 var (
-	ipRegex = regexp.MustCompile(ipRegexStr)
+	ipRegex         = regexp.MustCompile(ipRegexStr)
+	resolver        = NewResolver()
+	DnsCacheEnabled = false
 )
 
 // this file is deprecated and no maintenance
@@ -62,8 +66,9 @@ type LogProject struct {
 	//
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
-	CommonHeaders map[string]string
-	InnerHeaders  map[string]string
+	CommonHeaders     map[string]string
+	InnerHeaders      map[string]string
+	baseUrlUpdateTime time.Time
 }
 
 // NewLogProject creates a new SLS project.
@@ -1114,6 +1119,7 @@ func (p *LogProject) DeleteLogging() (err error) {
 }
 
 func (p *LogProject) init() {
+	rand.Seed(time.Now().UnixNano())
 	if p.retryTimeout == time.Duration(0) {
 		if p.httpClient == nil {
 			p.httpClient = defaultHttpClient
@@ -1124,7 +1130,7 @@ func (p *LogProject) init() {
 }
 
 func (p *LogProject) getBaseURL() string {
-	if len(p.baseURL) > 0 {
+	if len(p.baseURL) > 0 && p.baseUrlUpdateTime.After(time.Now().Add(-cacheTimeOut)) {
 		return p.baseURL
 	}
 	p.parseEndpoint()
@@ -1153,7 +1159,19 @@ func (p *LogProject) parseEndpoint() {
 			p.httpClient = newDefaultHTTPClient(defaultRequestTimeout)
 		}
 		setHTTPProxy(p.httpClient, url)
+	} else if DnsCacheEnabled {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.DialContext = DnsResolverDialFunc(resolver)
+		p.httpClient = &http.Client{
+			Transport: transport,
+			Timeout:   defaultRequestTimeout,
+		}
 	}
+	p.setBaseUrl(scheme, host)
+}
+
+func (p *LogProject) setBaseUrl(scheme, host string) {
+	p.baseUrlUpdateTime = time.Now()
 	if len(p.Name) == 0 {
 		p.baseURL = fmt.Sprintf("%s%s", scheme, host)
 	} else {
@@ -1165,4 +1183,31 @@ func setHTTPProxy(client *http.Client, proxy *url.URL) {
 	t := newDefaultTransport()
 	t.Proxy = http.ProxyURL(proxy)
 	client.Transport = t
+}
+
+type DialContextFunc = func(ctx context.Context, network, addr string) (net.Conn, error)
+
+func DnsResolverDialFunc(resolver *DNSCachedResolver) DialContextFunc {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		cHost, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+		d := net.Dialer{
+			// default
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}
+		if ips, err := resolver.Get(ctx, cHost); err == nil {
+			beginIdx := rand.Intn(len(ips))
+			retryNum := 0
+			for idx := beginIdx; idx < beginIdx+len(ips) && retryNum < 3; idx++ {
+				if conn, err := d.DialContext(ctx, network, net.JoinHostPort(ips[idx%len(ips)], port)); err == nil {
+					return conn, nil
+				}
+				retryNum += 1
+			}
+		}
+		return d.DialContext(ctx, network, addr)
+	}
 }
