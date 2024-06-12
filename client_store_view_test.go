@@ -77,7 +77,7 @@ func (s *StoreViewTestSuite) TestStoreViewCURD() {
 	// update
 	err = s.client.UpdateStoreView(s.project, &StoreView{
 		Name:      s.storeViewName,
-		StoreType: "logstore",
+		StoreType: STORE_VIEW_STORE_TYPE_LOGSTORE,
 		Stores: []*StoreViewStore{
 			{
 				StoreName: "logstore-1",
@@ -96,7 +96,7 @@ func (s *StoreViewTestSuite) TestStoreViewCURD() {
 	// create ok
 	err = s.client.CreateStoreView(s.project, &StoreView{
 		Name:      s.storeViewName,
-		StoreType: "logstore",
+		StoreType: STORE_VIEW_STORE_TYPE_LOGSTORE,
 		Stores: []*StoreViewStore{
 			{
 				StoreName: "logstore-1",
@@ -110,7 +110,7 @@ func (s *StoreViewTestSuite) TestStoreViewCURD() {
 	storeView, err := s.client.GetStoreView(s.project, s.storeViewName)
 	s.Require().NoError(err)
 	s.Require().Equal(s.storeViewName, storeView.Name)
-	s.Require().Equal("logstore", storeView.StoreType)
+	s.Require().Equal(STORE_VIEW_STORE_TYPE_LOGSTORE, storeView.StoreType)
 	s.Require().Equal(1, len(storeView.Stores))
 
 	// list
@@ -127,7 +127,7 @@ func (s *StoreViewTestSuite) TestStoreViewCURD() {
 	// update
 	err = s.client.UpdateStoreView(s.project, &StoreView{
 		Name:      s.storeViewName,
-		StoreType: "logstore",
+		StoreType: STORE_VIEW_STORE_TYPE_LOGSTORE,
 		Stores: []*StoreViewStore{
 			{
 				StoreName: "logstore-1",
@@ -160,7 +160,7 @@ func (s *StoreViewTestSuite) TestStoreViewCURD() {
 func (s *StoreViewTestSuite) TestStoreViewTypes() {
 	err := s.client.CreateStoreView(s.project, &StoreView{
 		Name:      s.storeViewName + "_1",
-		StoreType: "logstore",
+		StoreType: STORE_VIEW_STORE_TYPE_LOGSTORE,
 		Stores: []*StoreViewStore{
 			{
 				Project:   s.project,
@@ -176,7 +176,7 @@ func (s *StoreViewTestSuite) TestStoreViewTypes() {
 
 	err = s.client.CreateStoreView(s.project, &StoreView{
 		Name:      s.storeViewName + "_2",
-		StoreType: "metricstore",
+		StoreType: STORE_VIEW_STORE_TYPE_METRICSTORE,
 		Stores: []*StoreViewStore{
 			{
 				Project:   s.project,
@@ -193,13 +193,13 @@ func (s *StoreViewTestSuite) TestStoreViewTypes() {
 	storeview, err := s.client.GetStoreView(s.project, s.storeViewName+"_1")
 	s.Require().NoError(err)
 	s.Require().Equal(s.storeViewName+"_1", storeview.Name)
-	s.Require().Equal("logstore", storeview.StoreType)
+	s.Require().Equal(STORE_VIEW_STORE_TYPE_LOGSTORE, storeview.StoreType)
 	s.Require().Equal(2, len(storeview.Stores))
 
 	storeview, err = s.client.GetStoreView(s.project, s.storeViewName+"_2")
 	s.Require().NoError(err)
 	s.Require().Equal(s.storeViewName+"_2", storeview.Name)
-	s.Require().Equal("metricstore", storeview.StoreType)
+	s.Require().Equal(STORE_VIEW_STORE_TYPE_METRICSTORE, storeview.StoreType)
 	s.Require().Equal(2, len(storeview.Stores))
 
 	// list
