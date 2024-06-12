@@ -170,6 +170,20 @@ type ClientInterface interface {
 	// ListEventStore returns all eventStore names of project p.
 	ListEventStore(project string, offset, size int) ([]string, error)
 
+	// #################### StoreView Operations #####################
+	// CreateStoreView creates a new storeView.
+	CreateStoreView(project string, storeView *StoreView) error
+	// UpdateStoreView updates a storeView.
+	UpdateStoreView(project string, storeView *StoreView) error
+	// DeleteStoreView deletes a storeView.
+	DeleteStoreView(project string, storeViewName string) error
+	// GetStoreView returns storeView.
+	GetStoreView(project string, storeViewName string) (*StoreView, error)
+	// ListStoreViews returns all storeView names of a project.
+	ListStoreViews(project string, req *ListStoreViewsRequest) (*ListStoreViewsResponse, error)
+	// GetStoreViewIndex returns all index config of logstores in the storeView, only support storeType logstore.
+	GetStoreViewIndex(project string, storeViewName string) (*GetStoreViewIndexResponse, error)
+
 	// #################### Logtail Operations #####################
 	// ListMachineGroup returns machine group name list and the total number of machine groups.
 	// The offset starts from 0 and the size is the max number of machine groups could be returned.

@@ -2020,3 +2020,63 @@ func (c *TokenAutoUpdateClient) PostLogStoreLogsV2(project, logstore string, req
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) CreateStoreView(project string, storeView *StoreView) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateStoreView(project, storeView)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateStoreView(project string, storeView *StoreView) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateStoreView(project, storeView)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteStoreView(project string, storeViewName string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteStoreView(project, storeViewName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetStoreView(project string, storeViewName string) (storeView *StoreView, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		storeView, err = c.logClient.GetStoreView(project, storeViewName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListStoreViews(project string, req *ListStoreViewsRequest) (resp *ListStoreViewsResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		resp, err = c.logClient.ListStoreViews(project, req)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetStoreViewIndex(project string, storeViewName string) (resp *GetStoreViewIndexResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		resp, err = c.logClient.GetStoreViewIndex(project, storeViewName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
