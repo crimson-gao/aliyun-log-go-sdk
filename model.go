@@ -334,6 +334,12 @@ type StoreView struct {
 	Stores    []*StoreViewStore `json:"stores"`
 }
 
+// storeType of storeView
+const (
+	STORE_VIEW_STORE_TYPE_LOGSTORE    = "logstore"
+	STORE_VIEW_STORE_TYPE_METRICSTORE = "metricstore"
+)
+
 type StoreViewStore struct {
 	Project   string `json:"project"`
 	StoreName string `json:"storeName"`
