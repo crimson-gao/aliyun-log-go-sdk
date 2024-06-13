@@ -21,7 +21,7 @@ go env -w CGO_ENABLED=1
 ```
 
 ### 临时开启
-```
+```bash
 CGO_ENABLED=1 go build
 ```
 
