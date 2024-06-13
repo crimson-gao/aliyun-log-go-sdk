@@ -46,4 +46,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
 
-retract v0.1.73
+retract [v0.1.70, v0.1.78]
