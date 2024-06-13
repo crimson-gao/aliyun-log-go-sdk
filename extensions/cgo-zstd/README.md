@@ -3,12 +3,17 @@ cgo-zstd 是基于 cgo 实现的 zstd 压缩库，比纯 go 实现的 zstd 在�
 下面介绍如何开启此扩展来提升 zstd 压缩的性能。  
 
 ## 依赖
-使用此扩展，需要设置 go env 中的 CGO_ENABLED=1，且环境中已安装了 gcc。  
+使用此扩展，需要设置 go env 中的 CGO_ENABLED=1，且环境中已安装了合适的编译器，linux 上通常是 gcc。  
 可以通过以下命令查看当前 CGO_ENABLED 是否打开。
 
 ```bash
 go env | grep CGO_ENABLED
 ```
+查看默认的编译器。
+```bash
+go env | grep CC
+```
+
 
 ### 全局永久开启
 ```bash 
