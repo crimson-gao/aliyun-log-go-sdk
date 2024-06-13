@@ -145,6 +145,7 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 		Logstore:         consumer.option.Logstore,
 		ShardID:          shardId,
 		Cursor:           cursor,
+		Query:            consumer.option.Query,
 		LogGroupMaxCount: consumer.option.MaxFetchLogGroupCount,
 		CompressType:     consumer.option.CompressType,
 	}
