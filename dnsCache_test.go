@@ -1,7 +1,6 @@
 package sls
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"testing"
@@ -11,30 +10,10 @@ import (
 )
 
 func TestDNSCache(t *testing.T) {
-	resolver := NewResolver()
+	resolver := newDnsResolver()
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				cHost, port, err := net.SplitHostPort(addr)
-				if err != nil {
-					return nil, err
-				}
-				d := net.Dialer{
-					Timeout: defaultRequestTimeout, // timeout 5s
-				}
-
-				if ips, err := resolver.Get(ctx, cHost); err != nil {
-					return d.DialContext(ctx, network, addr)
-				} else {
-					for _, ip := range ips {
-						if conn, err := d.DialContext(ctx, network, net.JoinHostPort(ip, port)); err == nil {
-							return conn, nil
-						}
-					}
-					return d.DialContext(ctx, network, addr)
-				}
-
-			},
+			DialContext: newDnsDialContext(resolver, nil),
 		},
 		Timeout: defaultRequestTimeout,
 	}
@@ -60,30 +39,12 @@ func TestDNSCache(t *testing.T) {
 
 func TestTimeout(t *testing.T) {
 	t.Skip("this will cost at least 3 minutes")
-	resolver := NewResolver()
+	resolver := newDnsResolver()
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				cHost, port, err := net.SplitHostPort(addr)
-				if err != nil {
-					return nil, err
-				}
-				d := net.Dialer{
-					Timeout: defaultRequestTimeout, // timeout 5s
-				}
-
-				if ips, err := resolver.Get(ctx, cHost); err != nil {
-					return d.DialContext(ctx, network, addr)
-				} else {
-					for _, ip := range ips {
-						if conn, err := d.DialContext(ctx, network, net.JoinHostPort(ip, port)); err == nil {
-							return conn, nil
-						}
-					}
-					return d.DialContext(ctx, network, addr)
-				}
-
-			},
+			DialContext: newDnsDialContext(resolver, &net.Dialer{
+				Timeout: defaultRequestTimeout, // timeout 5s
+			}),
 		},
 		Timeout: defaultRequestTimeout,
 	}
