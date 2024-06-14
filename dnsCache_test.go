@@ -3,6 +3,7 @@ package sls
 import (
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -67,4 +68,30 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, 3, resolver.GetCacheNum())
 	resolver.deleteTimoutCachedIps(60)
 	assert.Equal(t, 1, resolver.GetCacheNum())
+}
+
+func TestDNSCacheMultiThread(t *testing.T) {
+	resolver := newDnsResolver()
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			DialContext: newDnsDialContext(resolver, nil),
+		},
+		Timeout: defaultRequestTimeout,
+	}
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 5; j++ {
+				_, err := httpClient.Get("https://www.baidu.com/")
+				assert.Nil(t, err)
+				_, err = httpClient.Get("https://www.aliyun.com/")
+				assert.Nil(t, err)
+				_, err = httpClient.Get("https://cn.bing.com/")
+				assert.Nil(t, err)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
