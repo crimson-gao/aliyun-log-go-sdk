@@ -7,9 +7,16 @@ import (
 	"time"
 )
 
+const (
+	defaultDnsCacheTimeOut     = 1 * time.Minute
+	defaultMaxAllowDnsCacheNum = 10000
+)
+
 var (
-	dnsCacheTimeOut     = 2 * time.Minute
-	maxAllowDnsCacheNum = 10000
+	DnsCacheEnabled     = false
+	DnsCacheTimeOut     = defaultDnsCacheTimeOut
+	MaxAllowDnsCacheNum = defaultMaxAllowDnsCacheNum
+	defaultDnsResolver  = newDnsResolver()
 )
 
 type ipInfo struct {
@@ -33,7 +40,7 @@ func (r *dnsCachedResolver) Get(ctx context.Context, host string) ([]string, err
 	r.lock.RLock()
 	ipInfo, exists := r.cache[host]
 	r.lock.RUnlock()
-	if exists && ipInfo.refreshTime.Add(dnsCacheTimeOut).After(time.Now()) {
+	if exists && ipInfo.refreshTime.Add(DnsCacheTimeOut).After(time.Now()) {
 		return ipInfo.ips, nil
 	}
 	return r.lookup(ctx, host)
@@ -52,7 +59,7 @@ func (r *dnsCachedResolver) Clear() {
 }
 
 func (r *dnsCachedResolver) deleteTimoutCachedIps(expireTimeSecond int) {
-	expireTime := dnsCacheTimeOut
+	expireTime := DnsCacheTimeOut
 	if expireTimeSecond >= 60 {
 		expireTime = time.Duration(expireTimeSecond) * time.Second
 	}
@@ -85,7 +92,7 @@ func (r *dnsCachedResolver) lookup(ctx context.Context, host string) ([]string, 
 	r.cache[host] = ipInfo{ips: strIPs, refreshTime: time.Now()}
 	l := len(r.cache)
 	r.lock.Unlock()
-	if l > maxAllowDnsCacheNum {
+	if l > MaxAllowDnsCacheNum {
 		r.deleteTimoutCachedIps(0)
 	}
 	return strIPs, nil

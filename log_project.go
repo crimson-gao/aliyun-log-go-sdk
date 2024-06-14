@@ -23,9 +23,7 @@ const (
 )
 
 var (
-	ipRegex         = regexp.MustCompile(ipRegexStr)
-	resolver        = newDnsResolver()
-	DnsCacheEnabled = false
+	ipRegex = regexp.MustCompile(ipRegexStr)
 )
 
 // this file is deprecated and no maintenance
@@ -1130,7 +1128,7 @@ func (p *LogProject) init() {
 }
 
 func (p *LogProject) getBaseURL() string {
-	if len(p.baseURL) > 0 && p.baseUrlUpdateTime.After(time.Now().Add(-dnsCacheTimeOut)) {
+	if len(p.baseURL) > 0 && p.baseUrlUpdateTime.After(time.Now().Add(-DnsCacheTimeOut)) {
 		return p.baseURL
 	}
 	p.parseEndpoint()
@@ -1161,7 +1159,7 @@ func (p *LogProject) parseEndpoint() {
 		setHTTPProxy(p.httpClient, url)
 	} else if DnsCacheEnabled {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
-		transport.DialContext = newDnsDialContext(resolver, nil)
+		transport.DialContext = newDnsDialContext(defaultDnsResolver, nil)
 		p.httpClient = &http.Client{
 			Transport: transport,
 			Timeout:   defaultRequestTimeout,
