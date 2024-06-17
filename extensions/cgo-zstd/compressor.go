@@ -20,7 +20,6 @@ func NewZstdCompressor(level int) *ZstdCompressor {
 			return zstd.NewCtx()
 		},
 	}
-	zstd.NewCtx()
 	return res
 }
 
