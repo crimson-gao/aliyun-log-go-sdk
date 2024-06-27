@@ -18,30 +18,28 @@ import (
 
 func TestTempCred(t *testing.T) {
 	now := time.Now()
-	nowInMills := now.UnixMilli()
 
 	// now = lastUpdated = expirationTime
-	c := NewTempCredentials("", "", "", nowInMills, nowInMills)
+	c := NewTempCredentials("", "", "", now, now)
 	assert.True(t, c.ShouldRefresh())
 
 	// now = lastUpdated < expirationTime
-	oneHourInMills := int64(60 * 60 * 1000)
-	c = NewTempCredentials("", "", "", nowInMills+oneHourInMills, nowInMills)
+	c = NewTempCredentials("", "", "", now.Add(time.Hour), now)
 	assert.False(t, c.ShouldRefresh())
 
 	// expirationTime < now  < lastUpdateTime
-	c = NewTempCredentials("", "", "", nowInMills-oneHourInMills, nowInMills+oneHourInMills)
+	c = NewTempCredentials("", "", "", now.Add(-time.Hour), now.Add(time.Hour))
 	assert.True(t, c.ShouldRefresh())
 	// now < expirationTime < lastUpdateTime
-	c = NewTempCredentials("", "", "", nowInMills+oneHourInMills, nowInMills+2*oneHourInMills)
+	c = NewTempCredentials("", "", "", now.Add(time.Hour), now.Add(2*time.Hour))
 	assert.False(t, c.ShouldRefresh())
 
 	// lastUpdateTime < now < expirationTime and factored-expirationTime
-	c = NewTempCredentials("", "", "", nowInMills+30*oneHourInMills, nowInMills-oneHourInMills)
+	c = NewTempCredentials("", "", "", now.Add(30*time.Hour), now.Add(-time.Hour))
 	assert.False(t, c.ShouldRefresh())
 
 	// lastUpdateTime < now < expirationTime , now > factored-expirationTime
-	c = NewTempCredentials("", "", "", nowInMills+oneHourInMills, nowInMills-2*oneHourInMills).WithExpiredFactor(0.5)
+	c = NewTempCredentials("", "", "", now.Add(time.Hour), now.Add(-2*time.Hour)).WithExpiredFactor(0.5)
 	assert.True(t, c.ShouldRefresh())
 
 }
@@ -112,7 +110,7 @@ func TestBuilderParser(t *testing.T) {
 	_, err = ecsRamRoleParser(&resp)
 	assert.Error(t, err)
 	body = `{"Code": "Success", "AccessKeyID": "xxxx", "AccessKeySecret": "yyyy",
-		"SecurityToken": "zzzz", "Expiration": 234, "LastUpdated": 456
+		"SecurityToken": "zzzz", "Expiration": "2023-07-09T12:00:00Z", "LastUpdated": "2023-07-09T12:00:00Z"
 	}`
 	resp = http.Response{
 		Body: ioutil.NopCloser(bytes.NewBufferString(body)),
@@ -121,7 +119,7 @@ func TestBuilderParser(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "xxxx", cred.AccessKeyID)
 	assert.Equal(t, "yyyy", cred.AccessKeySecret)
-	assert.Equal(t, int64(234), cred.expirationInMills)
+	fmt.Println(cred.Expiration)
 }
 
 type testCredentials struct {

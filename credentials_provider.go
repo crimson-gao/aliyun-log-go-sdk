@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"go.uber.org/atomic"
-
-	"github.com/go-kit/kit/log/level"
 )
 
 const CRED_TIME_FORMAT = time.RFC3339
@@ -114,7 +112,7 @@ func joinErrors(errs ...error) error {
 }
 
 const UPDATE_FUNC_RETRY_TIMES = 3
-const UPDATE_FUNC_FETCH_ADVANCED_DURATION = time.Second * 60 * 10
+const UPDATE_FUNC_FETCH_ADVANCED_DURATION = time.Second * 60 * 2
 
 // Adapter for porting UpdateTokenFunc to a CredentialsProvider.
 type UpdateFuncProviderAdapter struct {
@@ -148,7 +146,7 @@ func updateFuncFetcher(updateFunc UpdateTokenFunction) CredentialsFetcher {
 			return nil, fmt.Errorf("updateTokenFunc result not valid, expirationTime:%s",
 				expireTime.Format(time.RFC3339))
 		}
-		return NewTempCredentials(id, secret, token, expireTime.UnixNano()/1e6, -1), nil
+		return NewTempCredentials(id, secret, token, expireTime, time.Now()), nil
 	}
 
 }
@@ -163,7 +161,6 @@ func (adp *UpdateFuncProviderAdapter) GetCredentials() (Credentials, error) {
 		res := adp.cred.Load().(*Credentials)
 		return *res, nil
 	}
-	level.Debug(Logger).Log("reason", "updateTokenFunc start to fetch new credentials")
 
 	res, err := adp.fetcher() // res.lastUpdatedTime is not valid, do not use it
 
@@ -172,10 +169,7 @@ func (adp *UpdateFuncProviderAdapter) GetCredentials() (Credentials, error) {
 	}
 
 	adp.cred.Store(&res.Credentials)
-	adp.expirationInMills.Store(res.expirationInMills)
-	level.Debug(Logger).Log("reason", "updateTokenFunc fetch new credentials succeed",
-		"expirationTime", time.Unix(res.expirationInMills/1e3, res.expirationInMills%1e3*1e6).Format(CRED_TIME_FORMAT),
-	)
+	adp.expirationInMills.Store(res.Expiration.UnixMilli())
 	return res.Credentials, nil
 }
 
@@ -236,15 +230,15 @@ func ecsRamRoleParser(resp *http.Response) (*TempCredentials, error) {
 
 // Response struct for http response of ecs ram role fetch request
 type EcsRamRoleHttpResp struct {
-	Code            string `json:"Code"`
-	AccessKeyID     string `json:"AccessKeyId"`
-	AccessKeySecret string `json:"AccessKeySecret"`
-	SecurityToken   string `json:"SecurityToken"`
-	Expiration      int64  `json:"Expiration"`
-	LastUpdated     int64  `json:"LastUpdated"`
+	Code            string    `json:"Code"`
+	AccessKeyID     string    `json:"AccessKeyId"`
+	AccessKeySecret string    `json:"AccessKeySecret"`
+	SecurityToken   string    `json:"SecurityToken"`
+	Expiration      time.Time `json:"Expiration"`
+	LastUpdated     time.Time `json:"LastUpdated"`
 }
 
 func (r *EcsRamRoleHttpResp) isValid() bool {
 	return strings.ToLower(r.Code) == "success" && r.AccessKeyID != "" &&
-		r.AccessKeySecret != "" && r.Expiration > 0 && r.LastUpdated > 0
+		r.AccessKeySecret != "" && !r.Expiration.IsZero() && !r.LastUpdated.IsZero()
 }

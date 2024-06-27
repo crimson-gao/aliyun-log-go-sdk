@@ -15,13 +15,13 @@ const DEFAULT_EXPIRED_FACTOR = 0.8
 // Expirable credentials with an expiration.
 type TempCredentials struct {
 	Credentials
-	expiredFactor      float64
-	expirationInMills  int64 // The time when the credentials expires, unix timestamp in millis
-	lastUpdatedInMills int64
+	expiredFactor  float64
+	Expiration     time.Time // The time when the credentials expires, unix timestamp in millis
+	LastUpdateTime time.Time
 }
 
 func NewTempCredentials(accessKeyId, accessKeySecret, securityToken string,
-	expirationInMills, lastUpdatedInMills int64) *TempCredentials {
+	expiration time.Time, lastUpdateTime time.Time) *TempCredentials {
 
 	return &TempCredentials{
 		Credentials: Credentials{
@@ -29,9 +29,9 @@ func NewTempCredentials(accessKeyId, accessKeySecret, securityToken string,
 			AccessKeySecret: accessKeySecret,
 			SecurityToken:   securityToken,
 		},
-		expirationInMills:  expirationInMills,
-		lastUpdatedInMills: lastUpdatedInMills,
-		expiredFactor:      DEFAULT_EXPIRED_FACTOR,
+		Expiration:     expiration,
+		LastUpdateTime: lastUpdateTime,
+		expiredFactor:  DEFAULT_EXPIRED_FACTOR,
 	}
 }
 
@@ -51,19 +51,18 @@ func (t *TempCredentials) WithExpiredFactor(factor float64) *TempCredentials {
 
 // Returns true if credentials has expired already or will expire soon.
 func (t *TempCredentials) ShouldRefresh() bool {
-	nowInMills := time.Now().UnixNano() / 1e6
-	if nowInMills >= t.expirationInMills {
+	now := time.Now()
+	if now.Add(time.Minute * 2).After(t.Expiration) {
 		return true
 	}
-	duration := (float64)(t.expirationInMills-t.lastUpdatedInMills) * t.expiredFactor
+	duration := (float64)(t.Expiration.Sub(t.LastUpdateTime)) * t.expiredFactor
 	if duration < 0.0 { // check here
 		duration = 0
 	}
-	return (nowInMills - t.lastUpdatedInMills) >= int64(duration)
+	return now.Sub(t.LastUpdateTime) > time.Duration(int64(duration))
 }
 
 // Returns true if credentials has expired already.
 func (t *TempCredentials) HasExpired() bool {
-	nowInMills := time.Now().UnixNano() / 1e6
-	return nowInMills >= t.expirationInMills
+	return time.Now().After(t.Expiration)
 }
