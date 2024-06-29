@@ -3,6 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4"
+	"github.com/valyala/fasthttp"
 )
 
 // this file is deprecated and no maintenance
@@ -333,16 +335,15 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	} else {
 		uri = fmt.Sprintf("/logstores/%v", s.Name)
 	}
-	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	r, err := fastRequest(s.project, "POST", uri, h, out[:outLen])
 	if err != nil {
 		return NewClientError(err)
 	}
-	defer r.Body.Close()
-	body, _ = ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
+	defer fasthttp.ReleaseResponse(r)
+	if r.StatusCode() != http.StatusOK {
 		err := new(Error)
 		if jErr := json.Unmarshal(body, err); jErr != nil {
-			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+			return NewBadResponseError(string(body), toHttpHeader(&r.Header), r.StatusCode())
 		}
 		return err
 	}
@@ -410,16 +411,16 @@ func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey *string) (err error) {
 	}
 
 	uri := fmt.Sprintf("/logstores/%v/shards/route?key=%v", s.Name, *hashKey)
-	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	r, err := fastRequest(s.project, "POST", uri, h, out[:outLen])
 	if err != nil {
 		return NewClientError(err)
 	}
-	defer r.Body.Close()
-	body, _ = ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
+	defer fasthttp.ReleaseResponse(r)
+	if r.StatusCode() != http.StatusOK {
 		err := new(Error)
+		headers := toHttpHeader(&r.Header)
 		if jErr := json.Unmarshal(body, err); jErr != nil {
-			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+			return NewBadResponseError(string(body), headers, r.StatusCode())
 		}
 		return err
 	}
@@ -493,6 +494,26 @@ func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) ([]byte, string, error) {
 	return out, plm.NextCursor, err
 }
 
+func getKey(resp *fasthttp.ResponseHeader, key string) (string, bool) {
+	data := resp.Peek(key)
+	if data == nil {
+		return "", false
+	}
+	return string(data), true
+}
+
+func getHeaderInt(resp *fasthttp.ResponseHeader, headerName string) (int, error) {
+	data := resp.Peek(headerName)
+	if data == nil {
+		return -1, fmt.Errorf("can't find '%s' header", strings.ToLower(headerName))
+	}
+	i, err := strconv.Atoi(string(data))
+	if err != nil {
+		return -1, fmt.Errorf("can't parse '%s' header: %v", strings.ToLower(headerName), err)
+	}
+	return i, nil
+}
+
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
@@ -512,53 +533,47 @@ func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, pullL
 	urlVal := plr.ToURLParams()
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?%s", s.Name, plr.ShardID, urlVal.Encode())
 
-	r, err := request(s.project, "GET", uri, h, nil)
+	r, err := fastRequest(s.project, "GET", uri, h, nil)
 	if err != nil {
 		return
 	}
-	defer r.Body.Close()
-	buf, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
+	defer fasthttp.ReleaseResponse(r)
+	buf := r.Body()
+
 	pullLogMeta = &PullLogMeta{}
 	pullLogMeta.Netflow = len(buf)
-	if r.StatusCode != http.StatusOK {
+	if r.StatusCode() != http.StatusOK {
 		errMsg := &Error{}
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
-			dump, _ := httputil.DumpResponse(r, true)
-			if IsDebugLevelMatched(1) {
-				level.Error(Logger).Log("msg", string(dump))
-			}
 			return
 		}
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
 		return
 	}
-	v, ok := r.Header["X-Log-Compresstype"]
-	if !ok || len(v) == 0 {
+	v, ok := getKey(&r.Header, "X-Log-Compresstype")
+	if !ok {
 		err = fmt.Errorf("can't find 'x-log-compresstype' header")
 		return
 	}
 	var compressType = Compress_None
-	if v[0] == "lz4" {
+	if v == "lz4" {
 		compressType = Compress_LZ4
-	} else if v[0] == "zstd" {
+	} else if v == "zstd" {
 		compressType = Compress_ZSTD
 	} else {
 		err = fmt.Errorf("unexpected compress type:%v", compressType)
 		return
 	}
 
-	v, ok = r.Header["X-Log-Cursor"]
-	if !ok || len(v) == 0 {
+	v, ok = getKey(&r.Header, "X-Log-Cursor")
+	if !ok {
 		err = fmt.Errorf("can't find 'x-log-cursor' header")
 		return
 	}
-	pullLogMeta.NextCursor = v[0]
-	pullLogMeta.RawSize, err = ParseHeaderInt(r, "X-Log-Bodyrawsize")
+	pullLogMeta.NextCursor = v
+	pullLogMeta.RawSize, err = getHeaderInt(&r.Header, "X-Log-Bodyrawsize")
 	if err != nil {
 		return
 	}
@@ -585,30 +600,6 @@ func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, pullL
 			return nil, nil, fmt.Errorf("unexpected compress type: %d", compressType)
 		}
 	}
-	// todo: add query meta
-	// If query is not nil, extract more headers
-	// if plr.Query != "" {
-	// 	pullLogMeta.RawSizeBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatasize")
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	pullLogMeta.DataCountBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatacount")
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	pullLogMeta.Lines, err = ParseHeaderInt(r, "X-Log-Resultlines")
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	pullLogMeta.LinesBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatalines")
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	pullLogMeta.FailedLines, err = ParseHeaderInt(r, "X-Log-Failedlines")
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// }
 	return
 }
 

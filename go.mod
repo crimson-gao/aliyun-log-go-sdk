@@ -11,12 +11,13 @@ require (
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.2
-	github.com/klauspost/compress v1.17.8
+	github.com/klauspost/compress v1.17.9
 	github.com/pierrec/lz4 v2.6.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1
+	github.com/valyala/fasthttp v1.55.0
 	go.uber.org/atomic v1.5.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/net v0.26.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
@@ -30,6 +31,7 @@ require (
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.1 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
 	github.com/aliyun/credentials-go v1.1.2 // indirect
+	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/clbanning/mxj/v2 v2.5.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/frankban/quicktest v1.10.2 // indirect
@@ -40,6 +42,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
 	golang.org/x/tools v0.0.0-20210106214847-113979e3529a // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

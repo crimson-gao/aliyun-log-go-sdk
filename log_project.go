@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -64,6 +65,7 @@ type LogProject struct {
 	// be ignored
 	CommonHeaders map[string]string
 	InnerHeaders  map[string]string
+	fastClient    *fasthttp.HostClient
 }
 
 // NewLogProject creates a new SLS project.
@@ -1156,9 +1158,16 @@ func (p *LogProject) parseEndpoint() {
 	}
 	if len(p.Name) == 0 {
 		p.baseURL = fmt.Sprintf("%s%s", scheme, host)
+		p.fastClient = &fasthttp.HostClient{
+			Addr: host,
+		}
 	} else {
 		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+		p.fastClient = &fasthttp.HostClient{
+			Addr: p.Name + "." + host,
+		}
 	}
+
 }
 
 func setHTTPProxy(client *http.Client, proxy *url.URL) {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/go-kit/kit/log/level"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/net/context"
 )
 
@@ -258,4 +259,151 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
 	}
 	return resp, nil
+}
+
+// request sends a request to alibaba cloud Log Service.
+// @note if error is nil, you must call http.Response.Body.Close() to finalize reader
+func doFastRequest(ctx context.Context, project *LogProject, method, uri string, headers map[string]string,
+	body []byte) (*fasthttp.Response, error) {
+
+	// The caller should provide 'x-log-bodyrawsize' header
+	if _, ok := headers[HTTPHeaderBodyRawSize]; !ok {
+		return nil, NewClientError(fmt.Errorf("Can't find 'x-log-bodyrawsize' header"))
+	}
+
+	// SLS public request headers
+	baseURL := project.getBaseURL()
+	headers[HTTPHeaderHost] = baseURL
+	headers[HTTPHeaderAPIVersion] = version
+	if len(project.UserAgent) > 0 {
+		headers[HTTPHeaderUserAgent] = project.UserAgent
+	} else {
+		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
+	}
+
+	stsToken := project.SecurityToken
+	accessKeyID := project.AccessKeyID
+	accessKeySecret := project.AccessKeySecret
+
+	if project.credentialProvider != nil {
+		c, err := project.credentialProvider.GetCredentials()
+		if err != nil {
+			return nil, NewClientError(fmt.Errorf("fail to get credentials: %w", err))
+		}
+		stsToken = c.SecurityToken
+		accessKeyID = c.AccessKeyID
+		accessKeySecret = c.AccessKeySecret
+	}
+
+	// Access with token
+	if stsToken != "" {
+		headers[HTTPHeaderAcsSecurityToken] = stsToken
+	}
+
+	if body != nil {
+		if _, ok := headers[HTTPHeaderContentType]; !ok {
+			return nil, NewClientError(fmt.Errorf("Can't find 'Content-Type' header"))
+		}
+	}
+
+	for k, v := range project.InnerHeaders {
+		headers[k] = v
+	}
+	var signer Signer
+	if project.AuthVersion == AuthV4 {
+		headers[HTTPHeaderLogDate] = dateTimeISO8601()
+		signer = NewSignerV4(accessKeyID, accessKeySecret, project.Region)
+	} else if project.AuthVersion == AuthV0 {
+		signer = NewSignerV0()
+	} else {
+		headers[HTTPHeaderDate] = nowRFC1123()
+		signer = NewSignerV1(accessKeyID, accessKeySecret)
+	}
+	if err := signer.Sign(method, uri, headers, body); err != nil {
+		return nil, err
+	}
+
+	addHeadersAfterSign(project.CommonHeaders, headers)
+
+	// Initialize http request
+	// reader := bytes.NewReader(body)
+
+	// Handle the endpoint
+	urlStr := fmt.Sprintf("%s%s", baseURL, uri)
+
+	// =============== http client begin ==================
+
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(urlStr)
+	req.Header.SetMethod(method)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	req.SetBodyRaw(body)
+	resp := fasthttp.AcquireResponse()
+	err := project.fastClient.Do(req, resp)
+	fasthttp.ReleaseRequest(req)
+	if err != nil {
+		fasthttp.ReleaseResponse(resp)
+		return nil, err
+	}
+	code := resp.StatusCode()
+	resp.BodyStream()
+	respBody := resp.Body()
+	// Parse the sls error from body.
+	if code != http.StatusOK {
+		err := &Error{}
+		err.HTTPCode = (int32)(code)
+		if jErr := json.Unmarshal(respBody, err); jErr != nil {
+			header := toHttpHeader(&resp.Header)
+			fasthttp.ReleaseResponse(resp)
+			return nil, NewBadResponseError(string(respBody), header, code)
+		}
+		err.RequestID = string(resp.Header.Peek(RequestIDHeader))
+		fasthttp.ReleaseResponse(resp)
+		return nil, err
+	}
+	return resp, nil
+}
+
+func toHttpHeader(headers *fasthttp.ResponseHeader) map[string][]string {
+	r := make(map[string][]string)
+	headers.VisitAll(func(key, value []byte) {
+		k := string(key)
+		v := string(value)
+		r[k] = []string{v}
+	})
+	return r
+
+}
+
+// request sends a request to SLS.
+// mock param only for test, default is []
+func fastRequest(project *LogProject, method, uri string, headers map[string]string,
+	body []byte, mock ...interface{}) (*fasthttp.Response, error) {
+
+	var r *fasthttp.Response
+	var slsErr error
+	var err error
+
+	project.init()
+	ctx, cancel := context.WithTimeout(context.Background(), project.retryTimeout)
+	defer cancel()
+
+	if method == http.MethodGet {
+		err = RetryWithCondition(ctx, backoff.NewExponentialBackOff(), func() (bool, error) {
+			r, slsErr = doFastRequest(ctx, project, method, uri, headers, body)
+			return retryReadErrorCheck(ctx, slsErr)
+		})
+	} else {
+		err = RetryWithCondition(ctx, backoff.NewExponentialBackOff(), func() (bool, error) {
+			r, slsErr = doFastRequest(ctx, project, method, uri, headers, body)
+			return retryWriteErrorCheck(ctx, slsErr)
+		})
+	}
+
+	if err != nil {
+		return r, err
+	}
+	return r, slsErr
 }
